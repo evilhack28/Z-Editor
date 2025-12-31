@@ -11,6 +11,9 @@ object ObjectOrderRegistry {
         "SunDropperProperties",
         "SunBombChallengeProperties",
 
+        "PiratePlankProperties",
+        "TideProperties",
+
         "InitialPlantEntryProperties",
         "InitialZombieProperties",
         "InitialGridItemProperties",
@@ -44,6 +47,8 @@ object ObjectOrderRegistry {
         "RaidingPartyZombieSpawnerProps",
         "SpawnModernPortalsWaveActionProps",
         "ModifyConveyorWaveActionProps",
+
+        "TidalChangeWaveActionProps"
     )
 
     // 为了性能，转为 Map 加速查找

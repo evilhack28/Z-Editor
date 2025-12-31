@@ -140,11 +140,7 @@ fun StarChallengeModulePropertiesEP(
             val rtidInfo = RtidParser.parse(challengeRtid)
             if (rtidInfo?.source == "CurrentLevel") {
                 val alias = rtidInfo.alias
-                val removed =
-                    rootLevelFile.objects.removeAll { it.aliases?.contains(alias) == true }
-                if (removed) {
-                    Toast.makeText(context, "已删除本地对象 $alias", Toast.LENGTH_SHORT).show()
-                }
+                val removed = rootLevelFile.objects.removeAll { it.aliases?.contains(alias) == true }
             }
             refreshTrigger++
         }
@@ -159,9 +155,9 @@ fun StarChallengeModulePropertiesEP(
 
         if (targetObj != null) {
             targetObj.objData = gson.toJsonTree(newData)
-            Toast.makeText(context, "参数已更新", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "修改已保存", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(context, "错误：找不到本地对象 $alias", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "错误：找不到本地对象", Toast.LENGTH_SHORT).show()
         }
         editingChallenge = null
     }
@@ -234,7 +230,14 @@ fun StarChallengeModulePropertiesEP(
                 key(refreshTrigger) {
                     val activeList = challengeDataState.value.challenges.firstOrNull() ?: emptyList()
                     if (activeList.isEmpty()) {
-                        Text("暂无挑战", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("列表中暂无挑战", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp))
+                        }
                     } else {
                         activeList.forEachIndexed { index, challengeRtid ->
                             ChallengeItemCard(

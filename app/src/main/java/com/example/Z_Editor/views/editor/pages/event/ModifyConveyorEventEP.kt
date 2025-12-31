@@ -183,27 +183,33 @@ fun ModifyConveyorEventEP(
         ) {
             if (!hasConveyorModule) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)), // 浅橙色
-                    border = BorderStroke(1.dp, Color(0xFFFF9800)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    border = BorderStroke(1.dp, Color.Red),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Warning, null, tint = Color(0xFFEF6C00))
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color.Red
+                        )
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
-                                "未检测到传送带模块",
+                                text = "模块缺失警告",
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFEF6C00),
-                                fontSize = 15.sp,
+                                color = Color.Red,
+                                fontSize = 15.sp
                             )
+                            Spacer(Modifier.height(4.dp))
                             Text(
-                                "当前关卡没有添加传送带模块，此事件可能无法生效或导致游戏逻辑错误。",
-                                fontSize = 12.sp,
-                                color = Color(0xFFE65100)
+                                text = "关卡未检测到传送带模块，此事件在游戏中可能无法生效，甚至导致闪退",
+                                fontSize = 14.sp,
+                                color = Color(0xFFC62828),
+                                lineHeight = 18.sp
                             )
                         }
                     }

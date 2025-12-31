@@ -348,3 +348,21 @@ data class ModifyConveyorPlantData(
 data class ModifyConveyorRemoveData(
     @SerializedName("Type") var type: String = ""
 )
+
+// === 潮水变更事件 ===
+data class TidalChangeWaveActionData(
+    @SerializedName("ChangeAmount") var changeAmount: Int = 0,
+    @SerializedName("ChangeType") var changeType: String = "Absolute"
+)
+
+// === 退潮僵尸事件 ===
+data class BeachStageEventData(
+    @SerializedName("ColumnStart") var columnStart: Int = 5,
+    @SerializedName("ColumnEnd") var columnEnd: Int = 9,
+    @SerializedName("GroupSize") var groupSize: Int = 1,
+    @SerializedName("ZombieCount") var zombieCount: Int = 1,
+    @SerializedName("ZombieName") var zombieName: String = "beach",
+    @SerializedName("TimeBeforeFullSpawn") var timeBeforeFullSpawn: Double = 1.0,
+    @SerializedName("TimeBetweenGroups") var timeBetweenGroups: Double = 0.5,
+    @SerializedName("WaveStartMessage") var waveStartMessage: String = ""
+)

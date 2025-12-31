@@ -4,10 +4,8 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -129,22 +127,6 @@ fun RaidingPartyEventEP(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF0E1)),
-                elevation = CardDefaults.cardElevation(1.dp)
-            ) {
-                Column(modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxSize()) {
-                    Text("事件说明", fontWeight = FontWeight.Bold, color = Color(0xFFFF9800))
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "此事件控制海盗港湾的突袭，生成飞索僵尸。",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-            Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
@@ -152,7 +134,12 @@ fun RaidingPartyEventEP(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("生成参数配置", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        "生成参数配置",
+                        color = Color(0xFFFF9800),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
 
                     NumberInputInt(
                         value = eventDataState.value.groupSize,

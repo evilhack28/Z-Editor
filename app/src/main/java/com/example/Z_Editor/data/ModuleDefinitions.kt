@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Storm
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Transform
 import androidx.compose.material.icons.filled.Tsunami
+import androidx.compose.material.icons.filled.Water
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Widgets
@@ -66,6 +67,8 @@ sealed class EditorSubScreen {
     data class StormDetail(val rtid: String, val waveIndex: Int) : EditorSubScreen()
     data class RaidingDetail(val rtid: String, val waveIndex: Int) : EditorSubScreen()
     data class ParachuteRainDetail(val rtid: String, val waveIndex: Int) : EditorSubScreen()
+    data class TidalChangeDetail(val rtid: String, val waveIndex: Int) : EditorSubScreen()
+    data class BeachStageEventDetail(val rtid: String, val waveIndex: Int) : EditorSubScreen()
     data class InvalidEvent(val rtid: String, val waveIndex: Int) : EditorSubScreen()
 }
 
@@ -83,19 +86,19 @@ data class EventMetadata(
 
 object EventRegistry {
     private val registry = mapOf(
-        "ModifyConveyorWaveActionProps" to EventMetadata(
-            title = "传送带变更",
-            description = "动态添加或移除传送带上的卡片",
-            icon = Icons.Default.Transform,
-            color = Color(0xFF4AC380),
-            defaultAlias = "ModConveyorEvent",
-            defaultObjClass = "ModifyConveyorWaveActionProps",
-            initialDataFactory = { ModifyConveyorWaveActionData() },
+        "SpawnZombiesFromGroundSpawnerProps" to EventMetadata(
+            title = "地底出怪",
+            description = "从地下出现的出怪事件",
+            icon = Icons.Default.Groups,
+            color = Color(0xFF936457),
+            defaultAlias = "GroundSpawner",
+            defaultObjClass = "SpawnZombiesFromGroundSpawnerProps",
+            initialDataFactory = { WaveActionData() },
             summaryProvider = { obj ->
                 try {
                     val gson = com.google.gson.Gson()
-                    val data = gson.fromJson(obj.objData, ModifyConveyorWaveActionData::class.java)
-                    "+${data.addList.size} / -${data.removeList.size}"
+                    val data = gson.fromJson(obj.objData, SpawnZombiesFromGroundData::class.java)
+                    "${data.zombies.size} 僵尸"
                 } catch (_: Exception) {
                     "解析错误"
                 }
@@ -119,19 +122,55 @@ object EventRegistry {
                 }
             }
         ),
-        "SpawnZombiesFromGroundSpawnerProps" to EventMetadata(
-            title = "地底出怪",
-            description = "从地下出现的出怪事件",
-            icon = Icons.Default.Groups,
-            color = Color(0xFF936457),
-            defaultAlias = "GroundSpawner",
-            defaultObjClass = "SpawnZombiesFromGroundSpawnerProps",
-            initialDataFactory = { WaveActionData() },
+        "BeachStageEventZombieSpawnerProps" to EventMetadata(
+            title = "退潮突袭",
+            description = "僵尸在退潮时浮现突袭",
+            icon = Icons.Default.Water,
+            color = Color(0xFF00ACC1),
+            defaultAlias = "LowTideEvent",
+            defaultObjClass = "BeachStageEventZombieSpawnerProps",
+            initialDataFactory = { BeachStageEventData() },
             summaryProvider = { obj ->
                 try {
                     val gson = com.google.gson.Gson()
-                    val data = gson.fromJson(obj.objData, SpawnZombiesFromGroundData::class.java)
-                    "${data.zombies.size} 僵尸"
+                    val data = gson.fromJson(obj.objData, BeachStageEventData::class.java)
+                    "${data.zombieCount} 僵尸"
+                } catch (_: Exception) {
+                    "解析错误"
+                }
+            }
+        ),
+        "TidalChangeWaveActionProps" to EventMetadata(
+            title = "潮水变更",
+            description = "改变潮水位置",
+            icon = Icons.Default.WaterDrop,
+            color = Color(0xFF00ACC1),
+            defaultAlias = "TidalChangeEvent",
+            defaultObjClass = "TidalChangeWaveActionProps",
+            initialDataFactory = { TidalChangeWaveActionData() },
+            summaryProvider = { obj ->
+                try {
+                    val gson = com.google.gson.Gson()
+                    val data = gson.fromJson(obj.objData, TidalChangeWaveActionData::class.java)
+                    "位置: ${data.changeAmount}"
+                } catch (_: Exception) {
+                    "解析错误"
+                }
+            }
+        ),
+        "ModifyConveyorWaveActionProps" to EventMetadata(
+            title = "传送带变更",
+            description = "动态添加或移除传送带上的卡片",
+            icon = Icons.Default.Transform,
+            color = Color(0xFF4AC380),
+            defaultAlias = "ModConveyorEvent",
+            defaultObjClass = "ModifyConveyorWaveActionProps",
+            initialDataFactory = { ModifyConveyorWaveActionData() },
+            summaryProvider = { obj ->
+                try {
+                    val gson = com.google.gson.Gson()
+                    val data = gson.fromJson(obj.objData, ModifyConveyorWaveActionData::class.java)
+                    "+${data.addList.size} / -${data.removeList.size}"
                 } catch (_: Exception) {
                     "解析错误"
                 }
@@ -203,13 +242,14 @@ object EventRegistry {
                 try {
                     val gson = com.google.gson.Gson()
                     val data = gson.fromJson(obj.objData, ParachuteRainEventData::class.java)
-                    "${data.spiderCount} 只空降"
+                    "${data.spiderCount} 僵尸"
                 } catch (_: Exception) {
                     "解析错误"
                 }
             }
         ),
-    )
+
+        )
 
     fun getAll() = registry.values.toList()
     fun getMetadata(objClass: String?): EventMetadata? {
@@ -257,13 +297,13 @@ object ModuleRegistry {
     // 注册表：Key = objClass (字符串)
     private val registry = mapOf(
         "CustomLevelModuleProperties" to ModuleMetadata(
-        title = "庭院模块",
-        description = "开启后关卡适配庭院框架",
-        icon = Icons.Default.Home,
-        isCore = false,
-        defaultAlias = "DefaultCustomLevel",
-        defaultSource = "LevelModules",
-        navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+            title = "庭院模块",
+            description = "开启后关卡适配庭院框架",
+            icon = Icons.Default.Home,
+            isCore = false,
+            defaultAlias = "DefaultCustomLevel",
+            defaultSource = "LevelModules",
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
         "StandardLevelIntroProperties" to ModuleMetadata(
             title = "转场动画",
@@ -403,7 +443,7 @@ object ModuleRegistry {
             navigationFactory = { rtid -> EditorSubScreen.PiratePlank(rtid) }
         ),
         "TideProperties" to ModuleMetadata(
-            title = "潮水",
+            title = "潮水系统",
             description = "开启关卡中的潮水系统",
             icon = Icons.Default.WaterDrop,
             isCore = true,

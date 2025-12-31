@@ -1,4 +1,4 @@
-package com.example.Z_Editor.views.editor.pages.module
+package com.example.Z_Editor.views.editor.pages.event
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.PvzLevelFile
 import com.example.Z_Editor.data.RtidParser
-import com.example.Z_Editor.data.TidePropertiesData
+import com.example.Z_Editor.data.TidalChangeWaveActionData
 import com.example.Z_Editor.views.editor.EditorHelpDialog
 import com.example.Z_Editor.views.editor.HelpSection
 import com.example.Z_Editor.views.editor.NumberInputInt
@@ -59,7 +60,7 @@ private val gson = Gson()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TidePropertiesEP(
+fun TidalChangeEventEP(
     rtid: String,
     onBack: () -> Unit,
     rootLevelFile: PvzLevelFile,
@@ -67,19 +68,19 @@ fun TidePropertiesEP(
 ) {
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
-    val currentAlias = RtidParser.parse(rtid)?.alias ?: "Tide"
+    val currentAlias = RtidParser.parse(rtid)?.alias ?: "TidalChangeEvent"
 
     // 数据状态
-    val dataState = remember {
+    val actionDataState = remember {
         val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
         val data = try {
             if (obj != null) {
-                gson.fromJson(obj.objData, TidePropertiesData::class.java)
+                gson.fromJson(obj.objData, TidalChangeWaveActionData::class.java)
             } else {
-                TidePropertiesData()
+                TidalChangeWaveActionData()
             }
         } catch (_: Exception) {
-            TidePropertiesData()
+            TidalChangeWaveActionData()
         }
         mutableStateOf(data)
     }
@@ -88,24 +89,39 @@ fun TidePropertiesEP(
     fun sync() {
         val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
         if (obj != null) {
-            obj.objData = gson.toJsonTree(dataState.value)
+            obj.objData = gson.toJsonTree(actionDataState.value)
         }
     }
 
-    val startingLocation = dataState.value.startingWaveLocation
-    val isCellInWater: (Int) -> Boolean = remember(startingLocation) {
+    // 计算潮水位置显示（ChangeAmount 和 StartingWaveLocation 的含义相同）
+    val changeAmount = actionDataState.value.changeAmount
+    val isCellInWater: (Int) -> Boolean = remember(changeAmount) {
         { col: Int ->
-            val waterStartCol = 9 - startingLocation
+            val waterStartCol = 9 - changeAmount
             col >= waterStartCol
         }
     }
+
+    val hasTideModule = remember(rootLevelFile) {
+        rootLevelFile.objects.any { it.objClass == "TideProperties" }
+    }
+
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures(onTap = { focusManager.clearFocus() })
         },
         topBar = {
             TopAppBar(
-                title = { Text("潮水配置", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(
+                            "事件类型：潮水变更",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)
@@ -117,7 +133,7 @@ fun TidePropertiesEP(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF00ACC1),
+                    containerColor = Color(0xFF00ACC1),  // 蓝色，与潮水模块一致
                     titleContentColor = Color.White,
                     actionIconContentColor = Color.White
                 )
@@ -126,17 +142,17 @@ fun TidePropertiesEP(
     ) { padding ->
         if (showHelpDialog) {
             EditorHelpDialog(
-                title = "潮水模块说明",
+                title = "潮水变更事件说明",
                 onDismiss = { showHelpDialog = false },
                 themeColor = Color(0xFF00ACC1)
             ) {
                 HelpSection(
                     title = "简要介绍",
-                    body = "本模块用于开启关卡中的潮水系统，以便后续使用潮水更改事件。"
+                    body = "本事件用于在波次中改变潮水位置。"
                 )
                 HelpSection(
-                    title = "初始潮水位置",
-                    body = "可以指定潮水的初始位置。场地最右边为0，最左边为9。允许输入负数在内的整数。"
+                    title = "变更位置",
+                    body = "可以指定潮水变更后的位置。场地最右边为0，最左边为9。允许输入负数在内的整数。"
                 )
             }
         }
@@ -149,8 +165,40 @@ fun TidePropertiesEP(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-
+            if (!hasTideModule) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color.Red
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "模块缺失警告",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Red,
+                                fontSize = 15.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "关卡未检测到潮水模块，此事件在游戏中可能无法生效，甚至导致闪退",
+                                fontSize = 14.sp,
+                                color = Color(0xFFC62828),
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(2.dp),
@@ -158,7 +206,7 @@ fun TidePropertiesEP(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "初始潮水配置",
+                        text = "潮水变更配置",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color(0xFF00ACC1),
                         fontSize = 16.sp,
@@ -168,12 +216,12 @@ fun TidePropertiesEP(
                     Spacer(Modifier.height(16.dp))
 
                     NumberInputInt(
-                        value = dataState.value.startingWaveLocation,
+                        value = actionDataState.value.changeAmount,
                         onValueChange = {
-                            dataState.value = dataState.value.copy(startingWaveLocation = it)
+                            actionDataState.value = actionDataState.value.copy(changeAmount = it)
                             sync()
                         },
-                        label = "初始位置 (StartingWaveLocation)",
+                        label = "变更位置 (ChangeAmount)",
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -200,11 +248,10 @@ fun TidePropertiesEP(
 
                         Spacer(Modifier.height(16.dp))
 
-                        // 9x5 网格绘制
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(1.8f) // 保持 9:5 比例
+                                .aspectRatio(1.8f)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(Color(0xFFF5F5F5))
                                 .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(6.dp))
@@ -223,10 +270,8 @@ fun TidePropertiesEP(
                                                     .background(
                                                         if (inWater) Color(0xFF81D4FA).copy(alpha = 0.6f) // 淡蓝色表示有水
                                                         else Color.White
-                                                    ),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                            }
+                                                    )
+                                            )
                                         }
                                     }
                                 }
@@ -291,7 +336,7 @@ fun TidePropertiesEP(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "场地最右边坐标为0，最左边为9，可以输入负数让潮水初始位置在场外。",
+                            text = "场地最右边坐标为0，最左边为9，潮水的更改范围不能超出场地。",
                             color = Color(0xFF00ACC1),
                             fontSize = 12.sp,
                             lineHeight = 16.sp

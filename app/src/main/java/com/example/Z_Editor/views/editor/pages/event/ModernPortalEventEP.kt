@@ -87,7 +87,7 @@ private val PORTAL_DEFINITIONS = listOf(
     PortalWorldDef("cowboy", "主线西部", listOf("piano", "prospector", "poncho_plate")),
     PortalWorldDef("future", "主线未来", listOf("future_protector", "mech_cone", "football_mech")),
     PortalWorldDef("future_2", "未来2号", listOf("future_jetpack", "mech_cone", "future_armor1")),
-    PortalWorldDef("dark", "主线沙滩", listOf("dark_juggler")),
+    PortalWorldDef("dark", "主线黑暗", listOf("dark_juggler")),
     PortalWorldDef("beach", "主线沙滩", listOf("beach_octopus", "beach_surfer")),
     PortalWorldDef("iceage", "主线冰河", listOf("iceage_hunter", "iceage_weaselhoarder")),
     PortalWorldDef("lostcity", "主线失落", listOf("lostcity_excavator", "lostcity_jane")),

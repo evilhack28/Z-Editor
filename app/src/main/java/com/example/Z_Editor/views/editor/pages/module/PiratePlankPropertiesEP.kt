@@ -186,16 +186,17 @@ fun PiratePlankPropertiesEP(
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "地图类型不匹配",
+                                text = "地图类型不匹配",
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Red,
-                                fontSize = 16.sp
+                                fontSize = 15.sp
                             )
+                            Spacer(Modifier.height(4.dp))
                             Text(
-                                "当前地图类型为: ${stageObjClass ?: "未知"}，此模块仅适用于 PirateStageProperties 类型的地图。",
+                                text = "当前地图类型并非海盗地图，此模块在游戏中可能无法生效，甚至导致闪退",
                                 color = Color(0xFFC62828),
                                 fontSize = 14.sp,
-                                modifier = Modifier.padding(top = 4.dp)
+                                lineHeight = 18.sp
                             )
                         }
                     }

@@ -138,7 +138,7 @@ fun StormZombieSpawnerPropsEP(
             ) {
                 HelpSection(
                     title = "简要介绍",
-                    body = "生成沙尘暴或暴风雪将僵尸快速传送到前线。游戏内出现在埃及和冰河。"
+                    body = "生成沙尘暴或暴风雪将僵尸快速传送到前线。极寒风暴出现于回忆之旅，可以冻结经过的植物。"
                 )
                 HelpSection(
                     title = "始末位置",
@@ -167,12 +167,13 @@ fun StormZombieSpawnerPropsEP(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Text(
+                        "生成参数",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFFFF9800)
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "类型:",
-                            modifier = Modifier.width(60.dp),
-                            fontWeight = FontWeight.Bold
-                        )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable {
@@ -190,7 +191,7 @@ fun StormZombieSpawnerPropsEP(
                             )
                             Text("沙尘暴")
                         }
-                        Spacer(Modifier.width(16.dp))
+                        Spacer(Modifier.width(12.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable {
@@ -207,6 +208,24 @@ fun StormZombieSpawnerPropsEP(
                                 }
                             )
                             Text("暴风雪")
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable {
+                                stormDataState.value = stormDataState.value.copy(type = "excoldstorm")
+                                sync()
+                            }
+                        ) {
+                            RadioButton(
+                                selected = stormDataState.value.type == "excoldstorm",
+                                onClick = {
+                                    stormDataState.value =
+                                        stormDataState.value.copy(type = "excoldstorm")
+                                    sync()
+                                }
+                            )
+                            Text("极寒风暴")
                         }
                     }
 
@@ -246,18 +265,25 @@ fun StormZombieSpawnerPropsEP(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("生成逻辑", fontWeight = FontWeight.Bold)
+                    Text(
+                        "生成逻辑",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFFFF9800)
+                    )
 
                     NumberInputInt(
                         value = stormDataState.value.groupSize,
                         onValueChange = { stormDataState.value.groupSize = it; sync() },
-                        label = "每组数量 (GroupSize)"
+                        label = "每组数量 (GroupSize)",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     NumberInputInt(
                         value = stormDataState.value.timeBetweenGroups,
                         onValueChange = { stormDataState.value.timeBetweenGroups = it; sync() },
-                        label = "组间间隔 (TimeBetweenGroups)"
+                        label = "组间间隔 (TimeBetweenGroups)",
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -268,7 +294,12 @@ fun StormZombieSpawnerPropsEP(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("携带僵尸列表", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            "携带僵尸列表",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFFFF9800)
+                        )
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = {
                             onRequestZombieSelection { zombieId ->
@@ -294,7 +325,7 @@ fun StormZombieSpawnerPropsEP(
                                 .padding(24.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("列表中没有僵尸", color = Color.Gray)
+                            Text("列表中没有僵尸", fontSize = 14.sp, color = Color.Gray)
                         }
                     } else {
                         key(listRefreshTrigger) {

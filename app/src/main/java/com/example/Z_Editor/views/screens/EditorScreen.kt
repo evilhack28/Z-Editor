@@ -70,6 +70,7 @@ import com.example.Z_Editor.data.WaveManagerData
 import com.example.Z_Editor.data.WaveManagerModuleData
 import com.example.Z_Editor.views.editor.LevelSettingsTab
 import com.example.Z_Editor.views.editor.WaveTimelineTab
+import com.example.Z_Editor.views.editor.pages.event.BeachStageEventEP
 import com.example.Z_Editor.views.editor.pages.event.InvalidEventEP
 import com.example.Z_Editor.views.editor.pages.event.ModifyConveyorEventEP
 import com.example.Z_Editor.views.editor.pages.event.ParachuteRainEventEP
@@ -78,6 +79,7 @@ import com.example.Z_Editor.views.editor.pages.event.SpawnModernPortalsWaveActio
 import com.example.Z_Editor.views.editor.pages.event.SpawnZombiesFromGroundEventEP
 import com.example.Z_Editor.views.editor.pages.event.SpawnZombiesJitteredWaveActionPropsEP
 import com.example.Z_Editor.views.editor.pages.event.StormZombieSpawnerPropsEP
+import com.example.Z_Editor.views.editor.pages.event.TidalChangeEventEP
 import com.example.Z_Editor.views.editor.pages.module.ConveyorSeedBankPropertiesEP
 import com.example.Z_Editor.views.editor.pages.module.PiratePlankPropertiesEP
 import com.example.Z_Editor.views.editor.pages.module.InitialGridItemEntryEP
@@ -209,7 +211,6 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         }
 
         // B. 条件性缺失 (占位逻辑)
-        // TODO: 在此处注册更多关联逻辑
         // 例如：检测到有 "ChallengeModule" 但没有 "ChallengeSettings" 时提示
         /*
         if (existingClasses.contains("ChallengeModuleProperties") && !existingClasses.contains("ChallengeSettingsProperties")) {
@@ -451,9 +452,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 challengeModObj.objData = gson.toJsonTree(modData)
             }
         }
-
         refreshTrigger++
-        Toast.makeText(context, "已添加 ${info.title}", Toast.LENGTH_SHORT).show()
     }
 
     // ======================== 4. 弹窗组件 ========================
@@ -663,6 +662,12 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
 
                                                 "ParachuteRainZombieSpawnerProps" -> currentSubScreen =
                                                     EditorSubScreen.ParachuteRainDetail(rtid, waveIdx)
+
+                                                "TidalChangeWaveActionProps" -> currentSubScreen =
+                                                    EditorSubScreen.TidalChangeDetail(rtid, waveIdx)
+
+                                                "BeachStageEventZombieSpawnerProps" -> currentSubScreen =
+                                                    EditorSubScreen.BeachStageEventDetail(rtid, waveIdx)
 
                                                 else -> currentSubScreen =
                                                     EditorSubScreen.UnknownDetail(rtid)
@@ -883,7 +888,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 scrollState = getScrollState("PiratePlank")
             )
 
-            // 潮水事件
+            // 潮水模块
             is EditorSubScreen.Tide -> TidePropertiesEP(
                 rtid = targetState.rtid,
                 onBack = { navigateBackToMain() },
@@ -967,6 +972,23 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 onBack = { navigateBackToMain() },
                 rootLevelFile = rootLevelFile!!,
                 scrollState = getLazyState(targetState.rtid)
+            )
+
+            // 退潮突袭详情
+            is EditorSubScreen.BeachStageEventDetail -> BeachStageEventEP(
+                rtid = targetState.rtid,
+                onBack = { navigateBackToMain() },
+                rootLevelFile = rootLevelFile!!,
+                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
+                scrollState = getLazyState(targetState.rtid)
+            )
+
+            // 潮水变更详情
+            is EditorSubScreen.TidalChangeDetail -> TidalChangeEventEP(
+                rtid = targetState.rtid,
+                onBack = { navigateBackToMain() },
+                rootLevelFile = rootLevelFile!!,
+                scrollState = getScrollState("TidalChangeDetail")
             )
 
             is EditorSubScreen.InvalidEvent -> InvalidEventEP(
