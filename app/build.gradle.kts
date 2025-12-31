@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pvz2leveleditor"
+    namespace = "com.example.Z_Editor"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.pvz2leveleditor"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.compiler)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.remote.creation.core)
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
