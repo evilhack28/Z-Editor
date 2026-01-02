@@ -271,6 +271,15 @@
         "icon": "zombie_cowboy_gargantuar.jpg"
     },
     {
+        "id": "west_bull",
+        "name": "机器牛",
+        "tags": [
+            "West_Future",
+            "Pet"
+        ],
+        "icon": "zombie_west_bull.jpg"
+    },
+    {
         "id": "west_bullrider",
         "name": "骑牛小鬼僵尸",
         "tags": [
@@ -289,6 +298,15 @@
         "icon": "zombie_prospector.jpg"
     },
     {
+        "id": "chicken",
+        "name": "僵尸鸡",
+        "tags": [
+            "West_Future",
+            "Pet"
+        ],
+        "icon": "zombie_chicken.jpg"
+    },
+    {
         "id": "chicken_farmer",
         "name": "鸡贼僵尸",
         "tags": [
@@ -297,15 +315,6 @@
             "Pet"
         ],
         "icon": "zombie_chicken_farmer.jpg"
-    },
-    {
-        "id": "chicken",
-        "name": "僵尸鸡",
-        "tags": [
-            "West_Future",
-            "Pet"
-        ],
-        "icon": "zombie_chicken.jpg"
     },
     {
         "id": "piano",
@@ -342,15 +351,6 @@
             "Basic"
         ],
         "icon": "zombie_poncho.jpg"
-    },
-    {
-        "id": "west_bull",
-        "name": "机器牛",
-        "tags": [
-            "West_Future",
-            "Pet"
-        ],
-        "icon": "zombie_west_bull.jpg"
     },
     {
         "id": "kongfu_basic",
@@ -1047,6 +1047,15 @@
         "icon": "zombie_iceage_chief.jpg"
     },
     {
+        "id": "iceage_weasel",
+        "name": "冰鼬",
+        "tags": [
+            "Iceage_Lostcity",
+            "Pet"
+        ],
+        "icon": "zombie_iceage_weasel.jpg"
+    },
+    {
         "id": "iceage_weaselhoarder",
         "name": "冰鼬僵尸",
         "tags": [
@@ -1055,15 +1064,6 @@
             "Basic"
         ],
         "icon": "zombie_iceage_weaselhoarder.jpg"
-    },
-    {
-        "id": "iceage_weasel",
-        "name": "冰鼬",
-        "tags": [
-            "Iceage_Lostcity",
-            "Pet"
-        ],
-        "icon": "zombie_iceage_weasel.jpg"
     },
     {
         "id": "iceage_dodo",
@@ -1094,6 +1094,16 @@
         "icon": "zombie_iceage_hunter_elite.jpg"
     },
     {
+        "id": "iceage_weasel_elite",
+        "name": "精英冰鼬",
+        "tags": [
+            "Iceage_Lostcity",
+            "Elite",
+            "Pet"
+        ],
+        "icon": "zombie_iceage_weasel_elite.jpg"
+    },
+    {
         "id": "iceage_weaselhoarder_elite",
         "name": "精英冰鼬僵尸",
         "tags": [
@@ -1103,16 +1113,6 @@
             "Basic"
         ],
         "icon": "zombie_iceage_weaselhoarder_elite.jpg"
-    },
-    {
-        "id": "iceage_weasel_elite",
-        "name": "精英冰鼬",
-        "tags": [
-            "Iceage_Lostcity",
-            "Elite",
-            "Pet"
-        ],
-        "icon": "zombie_iceage_weasel_elite.jpg"
     },
     {
         "id": "iceage_chief_elite",

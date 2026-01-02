@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.PvzLevelFile
@@ -94,7 +95,8 @@ fun TidalChangeEventEP(
     }
 
     // 计算潮水位置显示（ChangeAmount 和 StartingWaveLocation 的含义相同）
-    val changeAmount = actionDataState.value.changeAmount
+    val changeAmount = actionDataState.value.tidalChange.changeAmount
+
     val isCellInWater: (Int) -> Boolean = remember(changeAmount) {
         { col: Int ->
             val waterStartCol = 9 - changeAmount
@@ -114,7 +116,7 @@ fun TidalChangeEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
                             "事件类型：潮水变更",
                             fontSize = 15.sp,
@@ -216,9 +218,13 @@ fun TidalChangeEventEP(
                     Spacer(Modifier.height(16.dp))
 
                     NumberInputInt(
-                        value = actionDataState.value.changeAmount,
-                        onValueChange = {
-                            actionDataState.value = actionDataState.value.copy(changeAmount = it)
+                        value = actionDataState.value.tidalChange.changeAmount,
+
+                        onValueChange = { newValue ->
+                            val currentInner = actionDataState.value.tidalChange
+                            actionDataState.value = actionDataState.value.copy(
+                                tidalChange = currentInner.copy(changeAmount = newValue)
+                            )
                             sync()
                         },
                         label = "变更位置 (ChangeAmount)",

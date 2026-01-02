@@ -107,7 +107,7 @@ fun SunDropperPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("阳光掉落配置") },
+                title = { Text("阳光掉落配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)
@@ -207,32 +207,32 @@ fun SunDropperPropertiesEP(
                         syncDataToRoot(rootLevelFile, currentAlias, sunDataState.value)
                     }
                     SunParamInput(
-                        "初始掉落间隔 (SunCountDownBase)",
-                        sunDataState.value.sunCountDownBase
+                        "初始掉落间隔 (SunCountdownBase)",
+                        sunDataState.value.sunCountdownBase
                     ) {
-                        sunDataState.value = sunDataState.value.copy(sunCountDownBase = it)
+                        sunDataState.value = sunDataState.value.copy(sunCountdownBase = it)
                         syncDataToRoot(rootLevelFile, currentAlias, sunDataState.value)
                     }
                     SunParamInput(
-                        "最大掉落间隔 (SunCountDownMax)",
-                        sunDataState.value.sunCountDownMax
+                        "最大掉落间隔 (SunCountdownMax)",
+                        sunDataState.value.sunCountdownMax
                     ) {
-                        sunDataState.value = sunDataState.value.copy(sunCountDownMax = it)
+                        sunDataState.value = sunDataState.value.copy(sunCountdownMax = it)
                         syncDataToRoot(rootLevelFile, currentAlias, sunDataState.value)
                     }
                     SunParamInput(
-                        "间隔浮动范围 (SunCountDownRange)",
-                        sunDataState.value.sunCountDownRange
+                        "间隔浮动范围 (SunCountdownRange)",
+                        sunDataState.value.sunCountdownRange
                     ) {
-                        sunDataState.value = sunDataState.value.copy(sunCountDownRange = it)
+                        sunDataState.value = sunDataState.value.copy(sunCountdownRange = it)
                         syncDataToRoot(rootLevelFile, currentAlias, sunDataState.value)
                     }
                     SunParamInput(
-                        "单次增加间隔 (sunCountDownIncreasePerSun)",
-                        sunDataState.value.sunCountDownIncreasePerSun
+                        "单次增加间隔 (sunCountdownIncreasePerSun)",
+                        sunDataState.value.sunCountdownIncreasePerSun
                     ) {
                         sunDataState.value =
-                            sunDataState.value.copy(sunCountDownIncreasePerSun = it)
+                            sunDataState.value.copy(sunCountdownIncreasePerSun = it)
                         syncDataToRoot(rootLevelFile, currentAlias, sunDataState.value)
                     }
                 }

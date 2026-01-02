@@ -1,5 +1,6 @@
 package com.example.Z_Editor
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,9 +23,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
-            PVZ2LevelEditorTheme {
+            PVZ2LevelEditorTheme(darkTheme = false) {
                 AppNavigation()
             }
         }

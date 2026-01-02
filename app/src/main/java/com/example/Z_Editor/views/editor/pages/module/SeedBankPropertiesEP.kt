@@ -119,7 +119,7 @@ fun SeedBankPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("种子库配置") },
+                title = { Text("种子库配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

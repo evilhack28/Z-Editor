@@ -47,7 +47,7 @@ fun ChallengeSelectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(bottom = 8.dp)
+                        .padding(bottom = 0.dp)
                 ) {
                     // 顶部栏
                     Row(

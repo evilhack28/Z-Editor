@@ -105,7 +105,7 @@ fun TidePropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("潮水配置", fontWeight = FontWeight.Bold) },
+                title = { Text("潮水配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

@@ -241,7 +241,7 @@ fun InitialPlantEntryEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("预置植物布局") },
+                title = { Text("预置植物布局", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)

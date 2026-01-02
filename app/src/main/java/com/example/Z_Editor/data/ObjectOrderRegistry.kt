@@ -48,7 +48,8 @@ object ObjectOrderRegistry {
         "SpawnModernPortalsWaveActionProps",
         "ModifyConveyorWaveActionProps",
 
-        "TidalChangeWaveActionProps"
+        "TidalChangeWaveActionProps",
+        "BeachStageEventZombieSpawnerProps"
     )
 
     // 为了性能，转为 Map 加速查找

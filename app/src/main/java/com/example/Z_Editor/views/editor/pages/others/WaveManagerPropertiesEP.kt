@@ -115,7 +115,7 @@ fun WaveManagerPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("波次事件参数配置") },
+                title = { Text("波次事件参数配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(

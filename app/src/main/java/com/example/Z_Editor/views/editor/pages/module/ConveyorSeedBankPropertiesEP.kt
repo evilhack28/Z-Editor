@@ -138,7 +138,7 @@ fun ConveyorSeedBankPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("传送带配置") },
+                title = { Text("传送带配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

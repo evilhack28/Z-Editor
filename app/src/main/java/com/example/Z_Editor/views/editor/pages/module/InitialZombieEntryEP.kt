@@ -315,7 +315,7 @@ fun InitialZombieEntryEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("预置僵尸布局") },
+                title = { Text("预置僵尸布局", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)

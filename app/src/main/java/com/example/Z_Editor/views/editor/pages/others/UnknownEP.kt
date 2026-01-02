@@ -43,7 +43,7 @@ fun UnknownEP(rtid: String, onBack: () -> Unit, scrollState: ScrollState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("模块编辑器开发中") },
+                title = { Text("模块编辑器开发中", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(

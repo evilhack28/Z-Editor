@@ -112,7 +112,7 @@ fun LevelDefinitionEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("关卡基本信息") },
+                title = { Text("关卡基本信息", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

@@ -152,7 +152,7 @@ object EventRegistry {
                 try {
                     val gson = com.google.gson.Gson()
                     val data = gson.fromJson(obj.objData, TidalChangeWaveActionData::class.java)
-                    "位置: ${data.changeAmount}"
+                    "位置: ${data.tidalChange.changeAmount}"
                 } catch (_: Exception) {
                     "解析错误"
                 }
@@ -264,11 +264,18 @@ object EventRegistry {
  * ==========================================
  * 定义一个模块在列表中长什么样，以及点击后去哪里
  */
+
+enum class ModuleCategory(val title: String) {
+    Base("基础功能"),
+    Scene("场地配置")
+}
+
 data class ModuleMetadata(
-    val title: String,          // 显示标题 (如 "阳光掉落")
-    val description: String,    // 简短描述
-    val icon: ImageVector,      // 图标
-    val isCore: Boolean,        // 是否为核心模块 (大卡片显示)
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
+    val isCore: Boolean,
+    val category: ModuleCategory,
 
     val defaultAlias: String,
     val defaultSource: String = "CurrentLevel",
@@ -290,6 +297,7 @@ object ModuleRegistry {
         description = "通用参数编辑器",
         icon = Icons.Default.Extension,
         isCore = false,
+        category = ModuleCategory.Base,
         defaultAlias = "Unknown",
         navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
     )
@@ -301,6 +309,7 @@ object ModuleRegistry {
             description = "开启后关卡适配庭院框架",
             icon = Icons.Default.Home,
             isCore = false,
+            category = ModuleCategory.Base,
             defaultAlias = "DefaultCustomLevel",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
@@ -310,6 +319,7 @@ object ModuleRegistry {
             description = "关卡开始时的摄像机平移",
             icon = Icons.Default.MovieFilter,
             isCore = false,
+            category = ModuleCategory.Base,
             defaultAlias = "StandardIntro",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
@@ -319,6 +329,7 @@ object ModuleRegistry {
             description = "僵尸进屋判负的位置",
             icon = Icons.Default.Dangerous,
             isCore = false,
+            category = ModuleCategory.Base,
             defaultAlias = "DefaultZombieWinCondition",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
@@ -328,6 +339,7 @@ object ModuleRegistry {
             description = "关卡稳定运行必须模块",
             icon = Icons.Default.Redeem,
             isCore = false,
+            category = ModuleCategory.Base,
             defaultAlias = "ZombiesDeadWinCon",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
@@ -338,6 +350,7 @@ object ModuleRegistry {
             description = "控制天上掉落阳光的频率",
             icon = Icons.Default.WbSunny,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "DefaultSunDropper",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.SunDropper(rtid) }
@@ -347,6 +360,7 @@ object ModuleRegistry {
             description = "预设卡槽植物与选卡方式",
             icon = Icons.Default.Yard,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "SeedBank",
             initialDataFactory = { SeedBankData() },
             navigationFactory = { rtid -> EditorSubScreen.SeedBank(rtid) }
@@ -356,6 +370,7 @@ object ModuleRegistry {
             description = "预设传送带植物种类和权重",
             icon = Icons.Default.LinearScale,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "ConveyorBelt",
             initialDataFactory = { ConveyorBeltData() },
             navigationFactory = { rtid -> EditorSubScreen.ConveyorBelt(rtid) }
@@ -365,6 +380,7 @@ object ModuleRegistry {
             description = "点数出怪的全局配置",
             icon = Icons.Default.Timeline,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "NewWaves",
             initialDataFactory = {
                 WaveManagerModuleData(
@@ -387,6 +403,7 @@ object ModuleRegistry {
             description = "关卡开始时场上已存在的植物",
             icon = Icons.Default.LocalFlorist,
             isCore = true,
+            category = ModuleCategory.Scene,
             defaultAlias = "InitialPlants",
             defaultSource = "CurrentLevel",
             initialDataFactory = { InitialPlantEntryData() },
@@ -397,6 +414,7 @@ object ModuleRegistry {
             description = "关卡开始时场上已存在的僵尸",
             icon = Icons.AutoMirrored.Filled.DirectionsWalk,
             isCore = true,
+            category = ModuleCategory.Scene,
             defaultAlias = "FrozenZombiePlacement",
             defaultSource = "CurrentLevel",
             initialDataFactory = { InitialZombieEntryData() },
@@ -407,6 +425,7 @@ object ModuleRegistry {
             description = "关卡开始时场上已存在的障碍物",
             icon = Icons.Default.Widgets,
             isCore = true,
+            category = ModuleCategory.Scene,
             defaultAlias = "GridItemPlacement",
             defaultSource = "CurrentLevel",
             initialDataFactory = { InitialGridItemEntryData() },
@@ -417,6 +436,7 @@ object ModuleRegistry {
             description = "配置掉落的太阳爆炸范围和伤害",
             icon = Icons.Default.BrightnessHigh,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "SunBombs",
             defaultSource = "CurrentLevel",
             initialDataFactory = { SunBombChallengeData() },
@@ -427,6 +447,7 @@ object ModuleRegistry {
             description = "设置关卡的限制条件与挑战目标",
             icon = Icons.AutoMirrored.Filled.FactCheck,
             isCore = true,
+            category = ModuleCategory.Base,
             defaultAlias = "ChallengeModule",
             defaultSource = "CurrentLevel",
             initialDataFactory = { StarChallengeModuleData() },
@@ -437,6 +458,7 @@ object ModuleRegistry {
             description = "配置海盗地图的甲板行数",
             icon = Icons.Default.Widgets,
             isCore = true,
+            category = ModuleCategory.Scene,
             defaultAlias = "PiratePlanks",
             defaultSource = "CurrentLevel",
             initialDataFactory = { PiratePlankPropertiesData() },
@@ -447,6 +469,7 @@ object ModuleRegistry {
             description = "开启关卡中的潮水系统",
             icon = Icons.Default.WaterDrop,
             isCore = true,
+            category = ModuleCategory.Scene,
             defaultAlias = "Tide",
             defaultSource = "CurrentLevel",
             initialDataFactory = { TidePropertiesData() },

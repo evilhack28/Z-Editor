@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.PortalEventData
@@ -201,7 +202,7 @@ fun SpawnModernPortalsWaveActionPropsEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("事件类型：时空裂缝", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },

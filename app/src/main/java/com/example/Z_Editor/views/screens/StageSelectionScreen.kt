@@ -177,6 +177,7 @@ fun StageSelectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
+                        .padding(bottom = 0.dp)
                 ) {
                     // --- 顶部搜索栏区域 (仿照 PlantSelectionScreen) ---
                     Row(
@@ -195,7 +196,7 @@ fun StageSelectionScreen(
                             onValueChange = { searchQuery = it },
                             placeholder = {
                                 Text(
-                                    "搜索地图",
+                                    "搜索地图名称或代号",
                                     fontSize = 16.sp,
                                     color = Color.Gray
                                 )
@@ -242,25 +243,25 @@ fun StageSelectionScreen(
                         Tab(
                             selected = selectedTab == 0,
                             onClick = { selectedTab = 0 },
-                            text = { Text("主线世界", fontWeight = FontWeight.Bold) },
+                            text = { Text("主线世界", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                             unselectedContentColor = Color.White.copy(alpha = 0.7f)
                         )
                         Tab(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
-                            text = { Text("活动/秘境", fontWeight = FontWeight.Bold) },
+                            text = { Text("活动/秘境", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                             unselectedContentColor = Color.White.copy(alpha = 0.7f)
                         )
                         Tab(
                             selected = selectedTab == 2,
                             onClick = { selectedTab = 2 },
-                            text = { Text("一代/季节", fontWeight = FontWeight.Bold) },
+                            text = { Text("一代/季节", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                             unselectedContentColor = Color.White.copy(alpha = 0.7f)
                         )
                         Tab(
                             selected = selectedTab == 3,
                             onClick = { selectedTab = 3 },
-                            text = { Text("小游戏", fontWeight = FontWeight.Bold) },
+                            text = { Text("小游戏", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                             unselectedContentColor = Color.White.copy(alpha = 0.7f)
                         )
                     }
@@ -275,7 +276,7 @@ fun StageSelectionScreen(
                 .background(Color(0xFFF5F5F5))
         ) {
             LazyVerticalGrid(
-                columns = Adaptive(minSize = 160.dp),
+                columns = Adaptive(minSize = 120.dp),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

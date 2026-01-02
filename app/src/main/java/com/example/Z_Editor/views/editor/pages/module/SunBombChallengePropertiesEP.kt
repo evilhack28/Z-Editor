@@ -91,7 +91,7 @@ fun SunBombChallengePropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("太阳炸弹配置", fontWeight = FontWeight.Bold) },
+                title = { Text("太阳炸弹配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

@@ -246,7 +246,7 @@ fun PlantSelectionScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 64.dp),
+                    columns = GridCells.Adaptive(minSize = 56.dp),
                     contentPadding = PaddingValues(8.dp),
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),

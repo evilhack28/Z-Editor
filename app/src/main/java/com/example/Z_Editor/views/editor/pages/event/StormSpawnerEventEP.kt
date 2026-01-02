@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.LevelParser
@@ -108,7 +110,7 @@ fun StormZombieSpawnerPropsEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("事件类型：风暴突袭", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },
@@ -189,7 +191,7 @@ fun StormZombieSpawnerPropsEP(
                                     sync()
                                 }
                             )
-                            Text("沙尘暴")
+                            Text("沙尘暴", fontSize = 12.sp)
                         }
                         Spacer(Modifier.width(12.dp))
                         Row(
@@ -207,13 +209,14 @@ fun StormZombieSpawnerPropsEP(
                                     sync()
                                 }
                             )
-                            Text("暴风雪")
+                            Text("暴风雪", fontSize = 12.sp)
                         }
                         Spacer(Modifier.width(12.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable {
-                                stormDataState.value = stormDataState.value.copy(type = "excoldstorm")
+                                stormDataState.value =
+                                    stormDataState.value.copy(type = "excoldstorm")
                                 sync()
                             }
                         ) {
@@ -225,7 +228,7 @@ fun StormZombieSpawnerPropsEP(
                                     sync()
                                 }
                             )
-                            Text("极寒风暴")
+                            Text("极寒风暴", fontSize = 12.sp)
                         }
                     }
 
@@ -387,6 +390,22 @@ fun StormZombieSpawnerPropsEP(
                                         onClick = {
                                             val newList =
                                                 stormDataState.value.zombies.toMutableList()
+                                            val zombieToCopy = newList[index]
+                                            newList.add(index + 1, zombieToCopy.copy())
+
+                                            stormDataState.value =
+                                                stormDataState.value.copy(zombies = newList)
+                                            sync()
+                                            listRefreshTrigger++
+                                        }
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            val newList =
+                                                stormDataState.value.zombies.toMutableList()
                                             newList.removeAt(index)
                                             stormDataState.value =
                                                 stormDataState.value.copy(zombies = newList)
@@ -394,7 +413,7 @@ fun StormZombieSpawnerPropsEP(
                                             listRefreshTrigger++
                                         }
                                     ) {
-                                        Icon(Icons.Default.Delete, null, tint = Color.LightGray)
+                                        Icon(Icons.Default.Delete, null, tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
                                     }
                                 }
                             }

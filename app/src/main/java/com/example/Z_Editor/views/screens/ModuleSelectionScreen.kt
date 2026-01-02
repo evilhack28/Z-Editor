@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -20,17 +22,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.Z_Editor.data.ModuleCategory
 import com.example.Z_Editor.data.ModuleMetadata
 import com.example.Z_Editor.data.ModuleRegistry
 
@@ -50,19 +66,116 @@ fun ModuleSelectionScreen(
     onBack: () -> Unit
 ) {
     val allModules = remember { ModuleRegistry.getAllKnownModules() }
+
+    // 状态管理
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf(ModuleCategory.Base) }
+
+    // 核心过滤逻辑：分类 + 搜索
+    val filteredModules = remember(selectedCategory, searchQuery) {
+        allModules.entries
+            .filter { (_, meta) ->
+                // 1. 匹配分类
+                val categoryMatch = meta.category == selectedCategory
+                // 2. 匹配搜索 (标题、描述、别名)
+                val searchMatch = if (searchQuery.isBlank()) true else {
+                    meta.title.contains(searchQuery, ignoreCase = true) ||
+                            meta.description.contains(searchQuery, ignoreCase = true) ||
+                            meta.defaultAlias.contains(searchQuery, ignoreCase = true)
+                }
+                categoryMatch && searchMatch
+            }
+            .toList()
+    }
+
+    // 主题色 (保持编辑器风格的深绿色)
     val themeColor = Color(0xFF388E3C)
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("添加关卡模块", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+            Surface(
+                color = themeColor,
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(bottom = 0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        }
+                        Spacer(Modifier.width(16.dp))
+
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = {
+                                Text("搜索模块名称或描述", fontSize = 16.sp, color = Color.Gray)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(54.dp),
+                            singleLine = true,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = themeColor
+                            ),
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, null, tint = Color.Gray)
+                            },
+                            trailingIcon = if (searchQuery.isNotEmpty()) {
+                                {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(Icons.Default.Clear, null, tint = Color.Gray)
+                                    }
+                                }
+                            } else null,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = themeColor)
-            )
+
+                    TabRow(
+                        selectedTabIndex = ModuleCategory.entries.indexOf(selectedCategory),
+                        containerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[ModuleCategory.entries.indexOf(selectedCategory)]),
+                                color = Color.White, // 指示器为白色
+                                height = 3.dp
+                            )
+                        },
+                    ) {
+                        ModuleCategory.entries.forEach { category ->
+                            val isSelected = selectedCategory == category
+                            Tab(
+                                selected = isSelected,
+                                onClick = { selectedCategory = category },
+                                text = {
+                                    Text(
+                                        text = category.title,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 16.sp,
+                                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
@@ -71,19 +184,40 @@ fun ModuleSelectionScreen(
                 .fillMaxSize()
                 .background(Color(0xFFF5F5F5))
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(1),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(allModules.entries.toList()) { (objClass, meta) ->
-                    val isAlreadyAdded = existingObjClasses.contains(objClass)
 
-                    ModuleSelectionCard(
-                        meta = meta,
-                        isAlreadyAdded = isAlreadyAdded,
-                        onClick = { if (!isAlreadyAdded) onModuleSelected(meta) }
+            if (filteredModules.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(64.dp)
                     )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = if (searchQuery.isNotEmpty()) "未找到匹配 \"$searchQuery\" 的模块" else "该分类下暂无模块",
+                        color = Color.Gray
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(1),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredModules) { (objClass, meta) ->
+                        val isAlreadyAdded = existingObjClasses.contains(objClass)
+
+                        ModuleSelectionCard(
+                            meta = meta,
+                            isAlreadyAdded = isAlreadyAdded,
+                            onClick = { if (!isAlreadyAdded) onModuleSelected(meta) }
+                        )
+                    }
                 }
             }
         }

@@ -132,7 +132,7 @@ fun WaveManagerModulePropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("波次管理器配置") },
+                title = { Text("波次管理器配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -374,16 +374,16 @@ fun ZombiePoolEditor(
             val placeholderContent = @Composable {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .background(Color(0xFFBDBDBD), CircleShape)
-                        .border(1.dp, Color.White, CircleShape),
+                        .fillMaxSize()
+                        .background(Color(0xFFEEEEEE), RoundedCornerShape(16.dp))
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = displayName.take(1).uppercase(),
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 18.sp
+                        color = Color.Gray,
+                        fontSize = 24.sp
                     )
                 }
             }
@@ -391,7 +391,7 @@ fun ZombiePoolEditor(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .background(Color.White, RoundedCornerShape(16.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -399,10 +399,10 @@ fun ZombiePoolEditor(
                     path = if (info?.icon != null) "images/zombies/${info.icon}" else null,
                     contentDescription = displayName,
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
-                        .border(1.dp, Color.LightGray, CircleShape),
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
                     filterQuality = FilterQuality.Medium,
                     placeholder = placeholderContent
                 )
@@ -433,7 +433,7 @@ fun ZombiePoolEditor(
                 }
 
                 IconButton(onClick = { onRemove(index) }) {
-                    Icon(Icons.Default.Delete, null, tint = Color.LightGray)
+                    Icon(Icons.Default.Delete, null, tint = Color.Red.copy(alpha = 0.7f))
                 }
             }
         }

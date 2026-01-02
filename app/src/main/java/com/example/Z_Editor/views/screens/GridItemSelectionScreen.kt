@@ -134,6 +134,7 @@ fun GridItemSelectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
+                        .padding(bottom = 0.dp)
                 ) {
                     // --- 顶部搜索栏区域 (完全复刻 StageSelectionScreen) ---
                     Row(
@@ -217,7 +218,7 @@ fun GridItemSelectionScreen(
                 .background(Color(0xFFF5F5F5))
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp), // 自适应宽度，每行通常2个
+                columns = GridCells.Adaptive(minSize = 120.dp), // 自适应宽度，每行通常2个
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

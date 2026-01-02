@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -60,6 +62,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.EventRegistry
@@ -78,18 +81,15 @@ fun EventChip(rtid: String, objectMap: Map<String, PvzObject>, onClick: () -> Un
     val obj = objectMap[alias]
     val isInvalid = obj == null
 
-    // 1. 直接获取元数据
     val meta = EventRegistry.getMetadata(obj?.objClass)
 
-    // 2. 决定颜色：失效红，未知灰，已知取配置
     val bgColor = when {
         isInvalid -> Color(0xFFD32F2F)
         meta != null -> meta.color
-        else -> Color(0xFF9E9E9E) // 未知类型的默认色
+        else -> Color(0xFF9E9E9E)
     }
 
-    // 3. 获取摘要文字 (例如 "5 僵尸")
-    val summaryText = if (!isInvalid) {
+    val summaryText = if (!isInvalid && obj != null) {
         meta?.summaryProvider?.invoke(obj)
     } else null
 
@@ -112,9 +112,16 @@ fun EventChip(rtid: String, objectMap: Map<String, PvzObject>, onClick: () -> Un
                 Spacer(Modifier.width(4.dp))
             }
 
-            Text(alias, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                text = alias,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
 
-            // 如果有摘要，显示摘要胶囊
             if (summaryText != null) {
                 Spacer(Modifier.width(8.dp))
                 Box(
@@ -122,7 +129,12 @@ fun EventChip(rtid: String, objectMap: Map<String, PvzObject>, onClick: () -> Un
                         .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 4.dp, vertical = 1.dp)
                 ) {
-                    Text(summaryText, color = Color.White, fontSize = 10.sp)
+                    Text(
+                        text = summaryText,
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        maxLines = 1
+                    )
                 }
             }
         }
@@ -361,16 +373,16 @@ fun ZombieEditSheetContent(
     val placeholderContent = @Composable {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .background(Color(0xFFBDBDBD), CircleShape)
-                .border(1.dp, Color.White, CircleShape),
+                .fillMaxSize()
+                .background(Color(0xFFEEEEEE), RoundedCornerShape(16.dp))
+                .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = displayName.take(1).uppercase(),
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontSize = 18.sp
+                color = Color.Gray,
+                fontSize = 24.sp
             )
         }
     }
@@ -379,17 +391,17 @@ fun ZombieEditSheetContent(
             .fillMaxWidth()
             .padding(24.dp)
             .navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AssetImage(
                 path = if (info?.icon != null) "images/zombies/${info.icon}" else null,
                 contentDescription = displayName,
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, Color.LightGray, CircleShape),
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
                 filterQuality = FilterQuality.Medium,
                 placeholder = placeholderContent
             )
@@ -407,38 +419,45 @@ fun ZombieEditSheetContent(
                     Text(realTypeName, fontSize = 14.sp, color = Color.Gray)
                 }
             }
-            Spacer(Modifier.weight(1f))
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 复制按钮 (如果存在)
             if (onCopy != null) {
                 Button(
                     onClick = onCopy,
+                    modifier = Modifier.weight(1f), // 平分宽度
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE3F2FD), // 浅蓝色背景
-                        contentColor = Color(0xFF1976D2)    // 深蓝色文字/图标
+                        containerColor = Color(0xFFE3F2FD),
+                        contentColor = Color(0xFF1976D2)
                     ),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.padding(end = 4.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("复制")
+                    Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("复制单位")
                 }
             }
+
             Button(
                 onClick = onDelete,
+                modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFFFEBEE),
                     contentColor = Color.Red
                 ),
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.padding(end = 4.dp)
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
-                Icon(Icons.Default.Delete, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("删除")
+                Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("删除单位")
             }
         }
-
-        HorizontalDivider()
 
         if (isElite) {
             Row(

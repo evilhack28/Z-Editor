@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.*
@@ -83,7 +84,7 @@ fun BeachStageEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("事件类型：退潮突袭", fontSize = 14.sp, fontWeight = FontWeight.Normal)
                     }
                 },

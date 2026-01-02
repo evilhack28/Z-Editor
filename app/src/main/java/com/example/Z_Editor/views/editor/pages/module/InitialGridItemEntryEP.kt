@@ -170,7 +170,7 @@ fun InitialGridItemEntryEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("场地物品布局") },
+                title = { Text("场地物品布局", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)

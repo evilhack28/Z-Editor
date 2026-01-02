@@ -336,16 +336,16 @@ fun WaveTimelineTab(
                                     val placeholderContent = @Composable {
                                         Box(
                                             modifier = Modifier
-                                                .size(40.dp)
-                                                .background(Color(0xFFBDBDBD), CircleShape)
-                                                .border(1.dp, Color.White, CircleShape),
+                                                .fillMaxSize()
+                                                .background(Color(0xFFEEEEEE), RoundedCornerShape(12.dp))
+                                                .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = displayName.take(1).uppercase(),
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                fontSize = 18.sp
+                                                color = Color.Gray,
+                                                fontSize = 24.sp
                                             )
                                         }
                                     }
@@ -358,13 +358,13 @@ fun WaveTimelineTab(
                                             contentDescription = displayName,
                                             modifier = Modifier
                                                 .size(40.dp)
-                                                .clip(CircleShape)
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .background(Color.White)
-                                                .border(1.dp, Color.LightGray, CircleShape),
+                                                .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp)),
                                             filterQuality = FilterQuality.Medium,
                                             placeholder = placeholderContent
                                         )
-                                        Spacer(Modifier.width(4.dp))
+                                        Spacer(Modifier.width(8.dp))
                                         Text(displayName, fontSize = 14.sp)
                                         Spacer(Modifier.weight(1f))
                                         Text(

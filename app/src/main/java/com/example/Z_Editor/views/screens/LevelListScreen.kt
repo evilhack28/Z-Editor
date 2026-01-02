@@ -405,7 +405,7 @@ fun FileItemCard(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = fileName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(text = fileName.substringBeforeLast("."), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(text = "JSON文件", fontSize = 12.sp, color = Color.Gray)
             }
 

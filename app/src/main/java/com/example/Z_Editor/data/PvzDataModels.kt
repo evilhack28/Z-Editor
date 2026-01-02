@@ -67,10 +67,10 @@ data class WaveManagerData(
 // === 阳光掉落模块 ===
 data class SunDropperPropertiesData(
     @SerializedName("InitialSunDropDelay") var initialSunDropDelay: Double = 2.0,
-    @SerializedName("SunCountDownBase") var sunCountDownBase: Double = 4.25,
-    @SerializedName("SunCountDownMax") var sunCountDownMax: Double = 9.5,
-    @SerializedName("SunCountDownIncreasePerSun") var sunCountDownIncreasePerSun: Double = 0.1,
-    @SerializedName("SunCountDownRange") var sunCountDownRange: Double = 2.75
+    @SerializedName("SunCountdownBase") var sunCountdownBase: Double = 4.25,
+    @SerializedName("SunCountdownMax") var sunCountdownMax: Double = 9.5,
+    @SerializedName("SunCountdownIncreasePerSun") var sunCountdownIncreasePerSun: Double = 0.1,
+    @SerializedName("SunCountdownRange") var sunCountdownRange: Double = 2.75
 )
 
 // === 种子库模块 ===
@@ -351,8 +351,12 @@ data class ModifyConveyorRemoveData(
 
 // === 潮水变更事件 ===
 data class TidalChangeWaveActionData(
+    @SerializedName("TidalChange") var tidalChange: TidalChangeInternalData = TidalChangeInternalData()
+)
+
+data class TidalChangeInternalData(
     @SerializedName("ChangeAmount") var changeAmount: Int = 0,
-    @SerializedName("ChangeType") var changeType: String = "Absolute"
+    @SerializedName("ChangeType") var changeType: String = "absolute"
 )
 
 // === 退潮僵尸事件 ===

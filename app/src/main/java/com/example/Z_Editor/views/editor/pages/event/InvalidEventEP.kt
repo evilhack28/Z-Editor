@@ -56,7 +56,7 @@ fun InvalidEventEP(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("引用失效提示") },
+                title = { Text("引用失效提示", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)

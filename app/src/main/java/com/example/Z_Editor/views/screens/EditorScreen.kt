@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.Z_Editor.data.EditorSubScreen
 import com.example.Z_Editor.data.EventMetadata
@@ -301,6 +302,35 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         val removed = parsedData!!.levelDef!!.modules.remove(rtid)
         if (!removed) return
 
+        if (objClass == "StarChallengeModuleProperties") {
+            val moduleObj = rootLevelFile!!.objects.find { it.aliases?.contains(alias) == true }
+
+            if (moduleObj != null) {
+                try {
+                    val challengeData = gson.fromJson(moduleObj.objData, StarChallengeModuleData::class.java)
+
+                    val allChallengeRtids = challengeData.challenges.flatten()
+
+                    var deletedCount = 0
+
+                    allChallengeRtids.forEach { challengeRtid ->
+                        val cInfo = RtidParser.parse(challengeRtid)
+                        if (cInfo?.source == "CurrentLevel") {
+                            val removed = rootLevelFile!!.objects.removeAll {
+                                it.aliases?.contains(cInfo.alias) == true
+                            }
+                            if (removed) deletedCount++
+                        }
+                    }
+                    if (deletedCount > 0) {
+                        Toast.makeText(context, "移除了 $deletedCount 个挑战模块", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         if (info?.source == "CurrentLevel") {
             rootLevelFile!!.objects.removeAll { it.aliases?.contains(alias) == true }
         }
@@ -537,7 +567,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text(currentFileName, fontSize = 20.sp) },
+                            title = { Text(currentFileName.substringBeforeLast("."), fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                             navigationIcon = {
                                 IconButton(onClick = { handleExit() }) {
                                     Icon(
