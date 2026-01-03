@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.LevelParser
+import com.example.z_editor.data.LevelParser
 import com.example.z_editor.views.editor.EditorHelpDialog
 import com.example.z_editor.views.editor.HelpSection
 

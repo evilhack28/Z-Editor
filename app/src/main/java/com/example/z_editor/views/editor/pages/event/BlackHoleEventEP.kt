@@ -36,9 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.BlackHoleEventData
-import com.example.z_editor.data.datamodel.PvzLevelFile
-import com.example.z_editor.data.datamodel.RtidParser
+import com.example.z_editor.data.BlackHoleEventData
+import com.example.z_editor.data.PvzLevelFile
+import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.EditorHelpDialog
 import com.example.z_editor.views.editor.HelpSection
 import com.example.z_editor.views.editor.NumberInputInt

@@ -1,4 +1,4 @@
-package com.example.z_editor.data.datamodel
+package com.example.z_editor.data
 
 object ObjectOrderRegistry {
     // 定义排序优先级列表，越靠前越优先写入文件

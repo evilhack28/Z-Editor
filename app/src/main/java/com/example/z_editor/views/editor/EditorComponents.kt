@@ -63,12 +63,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.EventRegistry
-import com.example.z_editor.data.datamodel.LevelParser
-import com.example.z_editor.data.datamodel.PvzObject
-import com.example.z_editor.data.datamodel.RtidParser
+import com.example.z_editor.data.EventRegistry
+import com.example.z_editor.data.LevelParser
+import com.example.z_editor.data.PvzObject
+import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.repository.ZombiePropertiesRepository
-import com.example.z_editor.data.datamodel.ZombieSpawnData
+import com.example.z_editor.data.ZombieSpawnData
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage

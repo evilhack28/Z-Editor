@@ -47,12 +47,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.LevelDefinitionData
-import com.example.z_editor.data.datamodel.ModuleMetadata
-import com.example.z_editor.data.datamodel.ModuleRegistry
-import com.example.z_editor.data.datamodel.PvzObject
+import com.example.z_editor.data.LevelDefinitionData
+import com.example.z_editor.data.ModuleMetadata
+import com.example.z_editor.data.ModuleRegistry
+import com.example.z_editor.data.PvzObject
 import com.example.z_editor.data.repository.ReferenceRepository
-import com.example.z_editor.data.datamodel.RtidParser
+import com.example.z_editor.data.RtidParser
 
 // ModuleUIInfo 保持不变
 data class ModuleUIInfo(

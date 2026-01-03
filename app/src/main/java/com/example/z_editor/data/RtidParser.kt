@@ -1,4 +1,4 @@
-package com.example.z_editor.data.datamodel
+package com.example.z_editor.data
 
 // 定义一个清晰的结构体
 data class RtidInfo(

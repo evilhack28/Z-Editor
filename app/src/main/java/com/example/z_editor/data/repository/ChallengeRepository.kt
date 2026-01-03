@@ -3,21 +3,21 @@ package com.example.z_editor.data.repository
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.example.z_editor.data.datamodel.StarChallengeBeatTheLevelData
-import com.example.z_editor.data.datamodel.StarChallengeBlowZombieData
-import com.example.z_editor.data.datamodel.StarChallengeKillZombiesInTimeData
-import com.example.z_editor.data.datamodel.StarChallengePlantFoodNonuseData
-import com.example.z_editor.data.datamodel.StarChallengePlantSurviveData
-import com.example.z_editor.data.datamodel.StarChallengePlantsLostData
-import com.example.z_editor.data.datamodel.StarChallengeSaveMowerData
-import com.example.z_editor.data.datamodel.StarChallengeSimultaneousPlantsData
-import com.example.z_editor.data.datamodel.StarChallengeSpendSunHoldoutData
-import com.example.z_editor.data.datamodel.StarChallengeSunProducedData
-import com.example.z_editor.data.datamodel.StarChallengeSunReducedData
-import com.example.z_editor.data.datamodel.StarChallengeSunUsedData
-import com.example.z_editor.data.datamodel.StarChallengeUnfreezePlantsData
-import com.example.z_editor.data.datamodel.StarChallengeZombieDistanceData
-import com.example.z_editor.data.datamodel.StarChallengeZombieSpeedData
+import com.example.z_editor.data.StarChallengeBeatTheLevelData
+import com.example.z_editor.data.StarChallengeBlowZombieData
+import com.example.z_editor.data.StarChallengeKillZombiesInTimeData
+import com.example.z_editor.data.StarChallengePlantFoodNonuseData
+import com.example.z_editor.data.StarChallengePlantSurviveData
+import com.example.z_editor.data.StarChallengePlantsLostData
+import com.example.z_editor.data.StarChallengeSaveMowerData
+import com.example.z_editor.data.StarChallengeSimultaneousPlantsData
+import com.example.z_editor.data.StarChallengeSpendSunHoldoutData
+import com.example.z_editor.data.StarChallengeSunProducedData
+import com.example.z_editor.data.StarChallengeSunReducedData
+import com.example.z_editor.data.StarChallengeSunUsedData
+import com.example.z_editor.data.StarChallengeUnfreezePlantsData
+import com.example.z_editor.data.StarChallengeZombieDistanceData
+import com.example.z_editor.data.StarChallengeZombieSpeedData
 
 // 挑战元数据模型
 data class ChallengeTypeInfo(

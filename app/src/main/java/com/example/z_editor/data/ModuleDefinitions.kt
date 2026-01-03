@@ -1,11 +1,10 @@
-package com.example.z_editor.data.datamodel
+package com.example.z_editor.data
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AddRoad
-import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.BlurCircular
 import androidx.compose.material.icons.filled.Bolt

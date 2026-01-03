@@ -1,4 +1,4 @@
-package com.example.z_editor.data.datamodel
+package com.example.z_editor.data
 
 import com.example.z_editor.data.repository.ZombiePropertiesRepository
 

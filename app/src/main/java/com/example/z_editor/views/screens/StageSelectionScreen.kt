@@ -56,7 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.RtidParser
+import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.components.AssetImage
 
 // === 1. 数据结构 ===

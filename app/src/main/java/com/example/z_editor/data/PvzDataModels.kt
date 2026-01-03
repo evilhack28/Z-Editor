@@ -1,6 +1,5 @@
-package com.example.z_editor.data.datamodel
+package com.example.z_editor.data
 
-import com.example.z_editor.data.datamodel.FlexibleIntAdapter
 import com.google.gson.JsonElement
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName

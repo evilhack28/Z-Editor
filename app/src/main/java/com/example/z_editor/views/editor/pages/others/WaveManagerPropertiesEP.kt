@@ -43,7 +43,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.WaveManagerData
+import com.example.z_editor.data.WaveManagerData
 import com.example.z_editor.views.editor.EditorHelpDialog
 import com.example.z_editor.views.editor.HelpSection
 

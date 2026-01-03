@@ -52,9 +52,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.datamodel.ModuleCategory
-import com.example.z_editor.data.datamodel.ModuleMetadata
-import com.example.z_editor.data.datamodel.ModuleRegistry
+import com.example.z_editor.data.ModuleCategory
+import com.example.z_editor.data.ModuleMetadata
+import com.example.z_editor.data.ModuleRegistry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
