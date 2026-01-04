@@ -82,9 +82,10 @@ import com.example.z_editor.data.StarChallengeSunUsedData
 import com.example.z_editor.data.StarChallengeUnfreezePlantsData
 import com.example.z_editor.data.StarChallengeZombieDistanceData
 import com.example.z_editor.data.StarChallengeZombieSpeedData
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
-import com.example.z_editor.views.editor.NumberInputInt
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputDouble
+import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -429,7 +430,7 @@ fun ChallengeEditDialog(
             )
         }
 
-        "StarChallengePlantSurviveProps" -> {
+        "StarChallengePlantsSurviveProps" -> {
             PlantSurviveEditDialog(
                 initialData = gson.fromJson(obj.objData, StarChallengePlantSurviveData::class.java),
                 onDismiss = onDismiss,
@@ -671,7 +672,7 @@ fun ZombieDistanceEditDialog(
                     color = Color.Gray
                 )
                 Spacer(Modifier.height(16.dp))
-                com.example.z_editor.views.editor.NumberInputDouble(
+                NumberInputDouble(
                     value = distance,
                     onValueChange = { distance = it },
                     label = "花坛距离 (TargetDistance)",
@@ -984,7 +985,7 @@ fun ZombieSpeedEditDialog(
                     color = Color.Gray
                 )
                 Spacer(Modifier.height(16.dp))
-                com.example.z_editor.views.editor.NumberInputDouble(
+                NumberInputDouble(
                     value = speedModifier,
                     onValueChange = { speedModifier = it },
                     label = "增幅倍率 (SpeedModifier)",
@@ -1039,7 +1040,7 @@ fun SunReducedEditDialog(
                     color = Color.Gray
                 )
                 Spacer(Modifier.height(16.dp))
-                com.example.z_editor.views.editor.NumberInputDouble(
+                NumberInputDouble(
                     value = sunModifier,
                     onValueChange = { sunModifier = it },
                     label = "降低倍率 (SunModifier)",
@@ -1259,7 +1260,7 @@ private fun getChallengeDisplayName(objClass: String): String {
             "StarChallengeBeatTheLevelProps" -> "关卡提示文字"
             "StarChallengeSaveMowerProps" -> "不丢车挑战"
             "StarChallengePlantFoodNonuseProps" -> "禁用能量豆挑战"
-            "StarChallengePlantSurviveProps" -> "幸存植物挑战"
+            "StarChallengePlantsSurviveProps" -> "幸存植物挑战"
             "StarChallengeZombieDistanceProps" -> "花坛线挑战"
             "StarChallengeSunProducedProps" -> "生产阳光挑战"
             "StarChallengeSunUsedProps" -> "阳光限额挑战"

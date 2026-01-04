@@ -1,24 +1,26 @@
-package com.example.z_editor.views.editor.pages.event
+package com.example.z_editor.views.editor.pages.module
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,10 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.BlackHoleEventData
+import com.example.z_editor.data.LastStandMinigamePropertiesData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
@@ -48,40 +49,31 @@ private val gson = Gson()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlackHoleEventEP(
+fun LastStandMinigamePropertiesEP(
     rtid: String,
     onBack: () -> Unit,
     rootLevelFile: PvzLevelFile,
     scrollState: ScrollState
 ) {
+    val currentAlias = RtidParser.parse(rtid)?.alias ?: ""
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
-    val currentAlias = RtidParser.parse(rtid)?.alias ?: "BlackHoleEvent"
 
-    // 状态管理
-    val eventDataState = remember {
+    val moduleDataState = remember {
         val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, BlackHoleEventData::class.java)
-            } else {
-                BlackHoleEventData()
-            }
+        val initialData = try {
+            gson.fromJson(obj?.objData, LastStandMinigamePropertiesData::class.java)
         } catch (_: Exception) {
-            BlackHoleEventData()
+            LastStandMinigamePropertiesData()
         }
-        mutableStateOf(data)
+        mutableStateOf(initialData)
     }
 
-    // 同步函数
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(eventDataState.value)
+        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
+            it.objData = gson.toJsonTree(moduleDataState.value)
         }
     }
-
-    val themeColor = Color(0xFF7C30D9)
 
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -89,24 +81,19 @@ fun BlackHoleEventEP(
         },
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("事件类型：黑洞吸引", fontSize = 15.sp, fontWeight = FontWeight.Normal)
-                    }
-                },
+                title = { Text("坚不可摧配置", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { showHelpDialog = true }) {
-                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "帮助说明", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.HelpOutline, "Help", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = themeColor,
+                    containerColor = Color(0xFF1976D2),
                     titleContentColor = Color.White,
                     actionIconContentColor = Color.White
                 )
@@ -115,17 +102,17 @@ fun BlackHoleEventEP(
     ) { padding ->
         if (showHelpDialog) {
             EditorHelpDialog(
-                title = "黑洞事件说明",
+                title = "坚不可摧模块说明",
                 onDismiss = { showHelpDialog = false },
-                themeColor = themeColor
+                themeColor = Color(0xFF1976D2)
             ) {
                 HelpSection(
                     title = "简要介绍",
-                    body = "功夫世界特有事件。时空黑洞会随事件生成，将所有植物向右吸动。"
+                    body = "启用此模块后，关卡开始时会进入布阵阶段，不会立即出怪，允许玩家消耗初始阳光摆放植物。点击开始战斗后才会开始刷新波次。"
                 )
                 HelpSection(
-                    title = "吸引配置",
-                    body = "可以输入植物被吸引拖拽的列数，表示植物会受黑洞影响向右移多少格。"
+                    title = "注意事项",
+                    body = "在启用坚不可摧后，需要在波次管理器启用手动开始游戏开关，否则僵尸会自动出现，在添加或移除坚不可摧模块时软件会自动管理此开关。"
                 )
             }
         }
@@ -140,31 +127,51 @@ fun BlackHoleEventEP(
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(2.dp),
-                modifier = Modifier.fillMaxWidth()
+                elevation = CardDefaults.cardElevation(2.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "吸引配置",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = themeColor,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("初始资源设置", fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
                     NumberInputInt(
-                        value = eventDataState.value.colNumPlantIsDragged,
-                        onValueChange = { newValue ->
-                            eventDataState.value = eventDataState.value.copy(
-                                colNumPlantIsDragged = newValue
-                            )
+                        value = moduleDataState.value.startingSun,
+                        onValueChange = {
+                            moduleDataState.value = moduleDataState.value.copy(startingSun = it)
                             sync()
                         },
-                        color = themeColor,
-                        label = "拖拽列数 (ColNumPlantIsDragged)",
+                        label = "初始阳光 (StartingSun)",
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    NumberInputInt(
+                        value = moduleDataState.value.startingPlantfood,
+                        onValueChange = {
+                            moduleDataState.value = moduleDataState.value.copy(startingPlantfood = it)
+                            sync()
+                        },
+                        label = "初始能量豆 (StartingPlantfood)",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE5EBF5)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(16.dp)) {
+                    Icon(Icons.Default.Info, null, tint = Color(0xFF1976D2))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "添加坚不可摧模块后会自动在波次管理器模块里启用手动开始游戏开关。",
+                            fontSize = 12.sp,
+                            color = Color(0xFF1976D2),
+                            lineHeight = 16.sp
+                        )
+                    }
                 }
             }
         }

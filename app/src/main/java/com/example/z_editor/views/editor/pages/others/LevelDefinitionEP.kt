@@ -51,8 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.LevelDefinitionData
 import com.example.z_editor.data.RtidParser
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +73,8 @@ fun LevelDefinitionEP(
     var victoryExpanded by remember { mutableStateOf(false) }
     var currentVictoryRtid by remember { mutableStateOf(levelDef.victoryModule) }
     val victoryOptions = listOf(
-        "RTID(VictoryOutro@LevelModules)" to "默认胜利 (VictoryOutro)"
+        "RTID(VictoryOutro@LevelModules)" to "默认胜利 (VictoryOutro)",
+        "RTID(ZombossVictoryOutro@LevelModules)" to "僵王战胜利 (ZombossVictoryOutro)"
     )
     val currentVictoryLabel =
         victoryOptions.find { it.first == currentVictoryRtid }?.second ?: levelDef.victoryModule

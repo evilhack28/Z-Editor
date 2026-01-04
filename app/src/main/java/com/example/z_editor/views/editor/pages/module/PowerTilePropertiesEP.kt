@@ -25,7 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -61,24 +60,25 @@ import com.example.z_editor.data.PowerTilePropertiesData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.TileLocationData
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
-import com.example.z_editor.views.editor.NumberInputDouble
+import com.example.z_editor.views.components.AssetImage
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.google.gson.Gson
 
 private val gson = Gson()
 
-// 定义瓷砖类型配置
 enum class PowerTileGroup(
     val value: String,
     val label: String,
     val color: Color,
-    val symbol: String
+    val symbol: String,
+    val imageName: String
 ) {
-    Alpha("alpha", "Alpha (绿)", Color(0xFF41FF4B), "α"),
-    Beta("beta", "Beta (红)", Color(0xFFFF493A), "β"),
-    Gamma("gamma", "Gamma (蓝)", Color(0xFF3CFFFF), "γ"),
-    Delta("delta", "Delta (黄)", Color(0xFFFFE837), "δ")
+    Alpha("alpha", "Alpha (绿)", Color(0xFF41FF4B), "α", "alpha_tile.webp"),
+    Beta("beta", "Beta (红)", Color(0xFFFF493A), "β", "beta_tile.webp"),
+    Gamma("gamma", "Gamma (蓝)", Color(0xFF3CFFFF), "γ", "gamma_tile.webp"),
+    Delta("delta", "Delta (黄)", Color(0xFFFFE837), "δ", "delta_tile.webp")
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -164,7 +164,6 @@ fun PowerTilePropertiesEP(
     if (tileToEdit != null) {
         AlertDialog(
             onDismissRequest = { tileToEdit = null },
-            icon = { Icon(Icons.Default.Edit, null) },
             title = {
                 Text("编辑 R${tileToEdit!!.location.my + 1}:C${tileToEdit!!.location.mx + 1} 瓷砖")
             },
@@ -229,7 +228,7 @@ fun PowerTilePropertiesEP(
                 )
                 HelpSection(
                     title = "延迟设置",
-                    body = "可以手动输入能量传导的时间差，这个值默认是1.5秒。放置后长按单个瓷砖可单独修改其延迟。"
+                    body = "可以设置能量开始传导的前摇时间，注意不包含传输时间。这个值默认是1.5秒。放置后长按单个瓷砖可单独修改其延迟。"
                 )
             }
         }
@@ -329,25 +328,28 @@ fun PowerTilePropertiesEP(
                                                 ?: PowerTileGroup.Alpha
 
                                         Box(
-                                            modifier = Modifier
-                                                .fillMaxSize(0.9f)
-                                                .background(
-                                                    groupConfig.color,
-                                                    RoundedCornerShape(4.dp)
-                                                ),
+                                            modifier = Modifier.fillMaxSize(0.95f),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Icon(
-                                                    Icons.Default.Bolt,
-                                                    null,
-                                                    tint = Color.Black.copy(0.7f),
-                                                    modifier = Modifier.size(16.dp)
-                                                )
+                                            AssetImage(
+                                                path = "images/others/${groupConfig.imageName}",
+                                                contentDescription = groupConfig.label,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .padding(bottom = 2.dp)
+                                                    .background(
+                                                        Color.Transparent
+                                                    )
+                                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                            ) {
                                                 Text(
                                                     text = "${tile.propagationDelay}s",
-                                                    fontSize = 9.sp,
-                                                    color = Color.Black.copy(0.7f),
+                                                    fontSize = 10.sp,
+                                                    color = Color.White,
                                                     fontWeight = FontWeight.Bold
                                                 )
                                             }
@@ -375,12 +377,16 @@ fun PowerTilePropertiesEP(
                             moduleDataState.value.linkedTiles.count { it.group == group.value }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .background(group.color, RoundedCornerShape(2.dp))
-                            )
-                            Text(group.symbol, fontSize = 12.sp, color = Color.Gray)
-                            Text("$count", fontWeight = FontWeight.Bold)
+                                modifier = Modifier.size(28.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AssetImage(
+                                    path = "images/others/${group.imageName}",
+                                    contentDescription = group.label,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Text("$count", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
 

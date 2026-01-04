@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -63,8 +62,9 @@ import com.example.z_editor.data.RailData
 import com.example.z_editor.data.RailcartData
 import com.example.z_editor.data.RailcartPropertiesData
 import com.example.z_editor.data.RtidParser
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
+import com.example.z_editor.views.components.AssetImage
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -360,44 +360,65 @@ fun RailcartPropertiesEP(
                     .border(1.dp, Color(0xFF8D6E63), RoundedCornerShape(6.dp))
                     .background(Color(0xFFD7CCC8))
             ) {
-                Column(Modifier.fillMaxSize()) {
-                    for (r in 0..4) {
-                        Row(Modifier.weight(1f)) {
-                            for (c in 0..8) {
-                                val hasRail = railsGrid[c][r]
-                                val hasCart = cartSet.contains("$c,$r")
 
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .border(
-                                            0.5.dp,
-                                            Color(0xFFA1887F).copy(alpha = 0.5f)
-                                        )
-                                        .clickable { handleGridClick(c, r) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (hasRail) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(18.dp)
-                                                .fillMaxHeight()
-                                                .background(Color(0xFFA46C62))
-                                        )
-                                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.8f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .border(1.dp, Color(0xFF8D6E63), RoundedCornerShape(6.dp))
+                        .background(Color(0xFFD7CCC8))
+                ) {
+                    Column(Modifier.fillMaxSize()) {
+                        for (r in 0..4) {
+                            Row(Modifier.weight(1f)) {
+                                for (c in 0..8) {
+                                    val hasRail = railsGrid[c][r]
+                                    val hasCart = cartSet.contains("$c,$r")
 
-                                    if (hasCart) {
-                                        Icon(
-                                            Icons.Default.Inbox,
-                                            contentDescription = null,
-                                            tint = Color(0xFFA46C62),
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .background(Color.White, CircleShape)
-                                                .border(1.dp, Color(0xFFA46C62), CircleShape)
-                                                .padding(4.dp)
-                                        )
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .border(
+                                                0.5.dp,
+                                                Color(0xFFA1887F).copy(alpha = 0.5f)
+                                            )
+                                            .clickable { handleGridClick(c, r) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (hasRail) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(0.8f)
+                                                    .fillMaxHeight()
+                                                    .background(Color(0xFF5D4037).copy(alpha = 0.3f))
+                                            ) {
+                                                AssetImage(
+                                                    path = "images/others/rails.png",
+                                                    contentDescription = "Railcart",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                )
+                                            }
+                                        }
+
+                                        if (hasCart) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize(0.8f)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color.Transparent),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                AssetImage(
+                                                    path = "images/others/railcarts.png",
+                                                    contentDescription = "Railcart",
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -58,7 +58,7 @@ object ChallengeRepository {
         ),
         ChallengeTypeInfo(
             title = "幸存植物挑战",
-            objClass = "StarChallengePlantSurviveProps",
+            objClass = "StarChallengePlantsSurviveProps",
             defaultAlias = "PlantsSurive",
             description = "需要指定数量的植物在游戏结束时存活",
             icon = Icons.Default.Security,

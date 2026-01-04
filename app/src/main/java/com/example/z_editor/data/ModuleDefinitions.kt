@@ -3,22 +3,29 @@ package com.example.z_editor.data
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.NextPlan
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AddRoad
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.BlurCircular
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.BrightnessHigh
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Dangerous
+import androidx.compose.material.icons.filled.EmojiPeople
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Grid4x4
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.HourglassDisabled
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.LinearScale
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.MovieFilter
+import androidx.compose.material.icons.filled.NextPlan
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Storm
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Transform
@@ -52,6 +59,7 @@ sealed class EditorSubScreen {
     data class EventSelection(val waveIndex: Int) : EditorSubScreen()
 
     // 具体模块页
+    data class LastStandMinigame(val rtid: String) : EditorSubScreen()
     data class SunDropper(val rtid: String) : EditorSubScreen()
     data class SeedBank(val rtid: String) : EditorSubScreen()
     data class ConveyorBelt(val rtid: String) : EditorSubScreen()
@@ -337,7 +345,8 @@ object EventRegistry {
 
 enum class ModuleCategory(val title: String) {
     Base("基础功能"),
-    Scene("场地配置")
+    Mode("特殊模式"),
+    Scene("场地配置"),
 }
 
 data class ModuleMetadata(
@@ -372,7 +381,6 @@ object ModuleRegistry {
         navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
     )
 
-    // 注册表：Key = objClass (字符串)
     private val registry = mapOf(
         "CustomLevelModuleProperties" to ModuleMetadata(
             title = "庭院模块",
@@ -415,6 +423,62 @@ object ModuleRegistry {
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
 
+        "LastStandMinigameProperties" to ModuleMetadata(
+            title = "坚不可摧",
+            description = "设置初始资源，开启布阵阶段",
+            icon = Icons.Default.Build,
+            isCore = true,
+            category = ModuleCategory.Mode,
+            defaultAlias = "LastStandMinigame",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { LastStandMinigamePropertiesData() },
+            navigationFactory = { rtid -> EditorSubScreen.LastStandMinigame(rtid) }
+        ),
+        "VaseBreakerPresetProperties" to ModuleMetadata(
+            title = "罐子布局",
+            description = "配置罐子的内容，需要另外两个模块支持",
+            icon = Icons.Default.Grid4x4,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "VaseBreakerProps",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { VaseBreakerPresetData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
+        "VaseBreakerArcadeModuleProperties" to ModuleMetadata(
+            title = "砸罐子模式",
+            description = "开启砸罐子模式的基础环境与UI支持",
+            icon = Icons.Default.SportsEsports,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "VaseBreakerArcade",
+            defaultSource = "LevelModules",
+            initialDataFactory = { VaseBreakerArcadeModuleData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
+        "VaseBreakerFlowModuleProperties" to ModuleMetadata(
+            title = "砸罐子流程",
+            description = "控制砸罐子的游戏流程与胜负判定逻辑",
+            icon = Icons.Default.NextPlan,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "VaseBreakerFlow",
+            defaultSource = "LevelModules",
+            initialDataFactory = { VaseBreakerFlowModuleData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
+        "EvilDaveProperties" to ModuleMetadata(
+            title = "我是僵尸",
+            description = "启用我是僵尸模式 (EvilDave)",
+            icon = Icons.Default.EmojiPeople,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "EvilDave",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { EvilDavePropertiesData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
+
         "SunDropperProperties" to ModuleMetadata(
             title = "阳光掉落",
             description = "控制天上掉落阳光的频率",
@@ -424,6 +488,17 @@ object ModuleRegistry {
             defaultAlias = "DefaultSunDropper",
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.SunDropper(rtid) }
+        ),
+        "SunBombChallengeProperties" to ModuleMetadata(
+            title = "太阳炸弹",
+            description = "配置掉落的太阳爆炸范围和伤害",
+            icon = Icons.Default.BrightnessHigh,
+            isCore = true,
+            category = ModuleCategory.Base,
+            defaultAlias = "SunBombs",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { SunBombChallengeData() },
+            navigationFactory = { rtid -> EditorSubScreen.SunBombChallenge(rtid) }
         ),
         "SeedBankProperties" to ModuleMetadata(
             title = "种子库",
@@ -500,17 +575,6 @@ object ModuleRegistry {
             defaultSource = "CurrentLevel",
             initialDataFactory = { InitialGridItemEntryData() },
             navigationFactory = { rtid -> EditorSubScreen.InitialGridItemEntry(rtid) }
-        ),
-        "SunBombChallengeProperties" to ModuleMetadata(
-            title = "太阳炸弹",
-            description = "配置掉落的太阳爆炸范围和伤害",
-            icon = Icons.Default.BrightnessHigh,
-            isCore = true,
-            category = ModuleCategory.Base,
-            defaultAlias = "SunBombs",
-            defaultSource = "CurrentLevel",
-            initialDataFactory = { SunBombChallengeData() },
-            navigationFactory = { rtid -> EditorSubScreen.SunBombChallenge(rtid) }
         ),
         "StarChallengeModuleProperties" to ModuleMetadata(
             title = "挑战模块",

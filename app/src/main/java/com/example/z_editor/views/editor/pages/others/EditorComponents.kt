@@ -1,5 +1,6 @@
-package com.example.z_editor.views.editor
+package com.example.z_editor.views.editor.pages.others
 
+import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

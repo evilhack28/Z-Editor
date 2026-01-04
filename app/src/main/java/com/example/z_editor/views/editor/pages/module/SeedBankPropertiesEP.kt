@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiPeople
 import androidx.compose.material.icons.filled.Yard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +37,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -46,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -58,9 +61,10 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.SeedBankData
 import com.example.z_editor.data.repository.PlantRepository
 import com.example.z_editor.data.repository.ReferenceRepository
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
-import com.example.z_editor.views.editor.NumberInputInt
+import com.example.z_editor.data.repository.ZombieRepository
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -72,10 +76,12 @@ fun SeedBankPropertiesEP(
     levelDef: LevelDefinitionData,
     onBack: () -> Unit,
     onRequestPlantSelection: ((String) -> Unit) -> Unit,
+    onRequestZombieSelection: ((String) -> Unit) -> Unit, // 新增参数：请求选择僵尸
     scrollState: ScrollState
 ) {
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
+
     val targetModuleRtid = remember(levelDef.modules) {
         levelDef.modules.find { rtid ->
             val info = RtidParser.parse(rtid)
@@ -105,6 +111,8 @@ fun SeedBankPropertiesEP(
         mutableStateOf(data)
     }
 
+    val isZombieMode = seedBankDataState.value.zombieMode == true
+
     fun syncData() {
         rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
             it.objData = gson.toJsonTree(seedBankDataState.value)
@@ -119,7 +127,7 @@ fun SeedBankPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("种子库配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                title = { Text(if(isZombieMode) "种子库 (我是僵尸)" else "种子库配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)
@@ -131,7 +139,7 @@ fun SeedBankPropertiesEP(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF388E3C),
+                    containerColor = if(isZombieMode) Color(0xFF654B80) else Color(0xFF388E3C), // 僵尸模式变色
                     titleContentColor = Color.White,
                     actionIconContentColor = Color.White
                 )
@@ -142,23 +150,12 @@ fun SeedBankPropertiesEP(
             EditorHelpDialog(
                 title = "种子库模块说明",
                 onDismiss = { showHelpDialog = false },
-                themeColor = Color(0xFF388E3C) // 使用与TopBar一致的主题色
+                themeColor = if(isZombieMode) Color(0xFF654B80) else Color(0xFF388E3C)
             ) {
+                // ... (原有帮助保持不变)
                 HelpSection(
-                    title = "简要介绍",
-                    body = "种子库可以允许玩家选择已有的植物，在庭院模块下通过定义全局阶级可以实现全植物可用。"
-                )
-                HelpSection(
-                    title = "预选植物",
-                    body = "选择方式为自选时，开始游戏前会让玩家在种子库补齐植物到卡槽总数。选择方式为预选时，玩家会带着预选设置页的植物直接开始游戏。"
-                )
-                HelpSection(
-                    title = "黑白名单",
-                    body = "白名单为空时不作限制，若白名单有植物则只能从白名单内选择。黑名单为额外禁用植物，优先级高于白名单。"
-                )
-                HelpSection(
-                    title = "进阶玩法",
-                    body = "当选择模式是preset时，将选卡模块放在传送带前面可以让传送带中文消耗阳光种植，放在后面可以让预选卡种植不消耗阳光。"
+                    title = "我是僵尸模式",
+                    body = "启用我是僵尸模式后，种子库将转变为僵尸选择器。此时选卡模式强制为 Preset，且等级和卡槽设置将被禁用。"
                 )
             }
         }
@@ -180,19 +177,19 @@ fun SeedBankPropertiesEP(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Yard, null, tint = Color(0xFF388E3C))
+                        Icon(Icons.Default.Yard, null, tint = if(isZombieMode) Color.Gray else Color(0xFF388E3C))
                         Spacer(Modifier.width(12.dp))
                         Text("基础规则", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
                     HorizontalDivider(thickness = 0.5.dp)
 
-                    // 选卡模式 (SelectionMethod)
                     Text("选卡模式", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SelectionMethodChip(
                             label = "自选 (Chooser)",
-                            selected = seedBankDataState.value.selectionMethod == "chooser",
+                            selected = seedBankDataState.value.selectionMethod == "chooser" && !isZombieMode,
+                            enabled = !isZombieMode,
                             onClick = {
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(selectionMethod = "chooser")
@@ -201,7 +198,8 @@ fun SeedBankPropertiesEP(
                         )
                         SelectionMethodChip(
                             label = "锁定 (Preset)",
-                            selected = seedBankDataState.value.selectionMethod == "preset",
+                            selected = seedBankDataState.value.selectionMethod == "preset" || isZombieMode,
+                            enabled = !isZombieMode,
                             onClick = {
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(selectionMethod = "preset")
@@ -210,86 +208,146 @@ fun SeedBankPropertiesEP(
                         )
                     }
 
-                    // 数值设置 (Level & Slots)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // 植物等级 (0-5)，0 表示跟随账号(null)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.alpha(if (isZombieMode) 0.5f else 1f)
+                    ) {
                         NumberInputInt(
                             value = seedBankDataState.value.globalLevel ?: 0,
                             onValueChange = { input ->
-                                val clamped = input.coerceIn(0, 5)
-                                val finalVal = if (clamped == 0) null else clamped
-
-                                seedBankDataState.value =
-                                    seedBankDataState.value.copy(globalLevel = finalVal)
-                                syncData()
+                                if (!isZombieMode) {
+                                    val clamped = input.coerceIn(0, 5)
+                                    val finalVal = if (clamped == 0) null else clamped
+                                    seedBankDataState.value = seedBankDataState.value.copy(globalLevel = finalVal)
+                                    syncData()
+                                }
                             },
                             label = "植物等级 (0-5)",
                             modifier = Modifier.weight(1f)
                         )
 
-                        // 卡槽数量 (0-9)
                         NumberInputInt(
                             value = seedBankDataState.value.overrideSeedSlotsCount ?: 0,
                             onValueChange = { input ->
-                                val clamped = input.coerceIn(0, 9)
-
-                                seedBankDataState.value =
-                                    seedBankDataState.value.copy(overrideSeedSlotsCount = clamped)
-                                syncData()
+                                if (!isZombieMode) {
+                                    val clamped = input.coerceIn(0, 9)
+                                    seedBankDataState.value = seedBankDataState.value.copy(overrideSeedSlotsCount = clamped)
+                                    syncData()
+                                }
                             },
                             modifier = Modifier.weight(1f),
                             label = "卡槽数量 (0-9)"
                         )
                     }
-                    Text(
-                        text = "等级输入 0 表示等级跟随玩家账号，庭院模块启用后，对卡槽数量的修改不生效",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        lineHeight = 20.sp
+                    if (isZombieMode) {
+                        Text(
+                            text = "我是僵尸模式下，等级与卡槽设置不可用",
+                            fontSize = 12.sp,
+                            color = Color(0xFFD32F2F)
+                        )
+                    }
+                }
+            }
+
+            // === 第二部分：列表编辑器 ===
+
+            if (isZombieMode) {
+                ResourceListEditor(
+                    title = "可用僵尸列表",
+                    description = "我是僵尸模式下供玩家使用的僵尸",
+                    items = seedBankDataState.value.presetPlantList,
+                    accentColor = Color(0xFF654B80),
+                    isZombie = true,
+                    onListChanged = { newList ->
+                        seedBankDataState.value = seedBankDataState.value.copy(presetPlantList = newList)
+                        syncData()
+                    },
+                    onAddRequest = onRequestZombieSelection
+                )
+            } else {
+                // 1. 预设植物
+                ResourceListEditor(
+                    title = "预设植物 (PresetPlantList)",
+                    description = "开局自带的植物",
+                    items = seedBankDataState.value.presetPlantList,
+                    accentColor = Color(0xFF1976D2),
+                    isZombie = false,
+                    onListChanged = { newList ->
+                        seedBankDataState.value = seedBankDataState.value.copy(presetPlantList = newList)
+                        syncData()
+                    },
+                    onAddRequest = onRequestPlantSelection
+                )
+
+                // 2. 白名单
+                ResourceListEditor(
+                    title = "白名单 (WhiteList)",
+                    description = "仅允许选择这些植物 (空则不限制)",
+                    items = seedBankDataState.value.plantWhiteList,
+                    accentColor = Color(0xFF388E3C), // 绿
+                    isZombie = false,
+                    onListChanged = { newList ->
+                        seedBankDataState.value = seedBankDataState.value.copy(plantWhiteList = newList)
+                        syncData()
+                    },
+                    onAddRequest = onRequestPlantSelection
+                )
+
+                // 3. 黑名单
+                ResourceListEditor(
+                    title = "黑名单 (BlackList)",
+                    description = "禁止选择这些植物",
+                    items = seedBankDataState.value.plantBlackList,
+                    accentColor = Color(0xFFD32F2F), // 红
+                    isZombie = false,
+                    onListChanged = { newList ->
+                        seedBankDataState.value = seedBankDataState.value.copy(plantBlackList = newList)
+                        syncData()
+                    },
+                    onAddRequest = onRequestPlantSelection
+                )
+            }
+
+            // === 第三部分：底部开关 ===
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.EmojiPeople, null, tint = Color(0xFF654B80))
+                            Spacer(Modifier.width(8.dp))
+                            Text("我是僵尸模式 (ZombieMode)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "启用后将转变为放置僵尸的玩法，选卡方式将被锁定。",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(
+                        checked = isZombieMode,
+                        onCheckedChange = { checked ->
+                            // 切换逻辑：更新 Boolean，同时处理关联属性
+                            var newData = seedBankDataState.value.copy(zombieMode = checked)
+                            if (checked) {
+                                // 开启僵尸模式：强制 Preset
+                                newData = newData.copy(selectionMethod = "preset")
+                            }
+                            // 如果关闭僵尸模式，保持原有 preset 设置，由用户自己切回 chooser 即可
+                            seedBankDataState.value = newData
+                            syncData()
+                        }
                     )
                 }
             }
-            // === 第二部分：列表编辑器 ===
-
-            // 1. 预设植物
-            PlantListEditor(
-                title = "预设植物 (PresetPlantList)",
-                description = "开局自带的植物",
-                items = seedBankDataState.value.presetPlantList,
-                accentColor = Color(0xFF1976D2),
-                onListChanged = { newList ->
-                    seedBankDataState.value =
-                        seedBankDataState.value.copy(presetPlantList = newList)
-                    syncData()
-                },
-                onAddRequest = onRequestPlantSelection
-            )
-
-            // 2. 白名单
-            PlantListEditor(
-                title = "白名单 (WhiteList)",
-                description = "仅允许选择这些植物 (空则不限制)",
-                items = seedBankDataState.value.plantWhiteList,
-                accentColor = Color(0xFF388E3C), // 绿
-                onListChanged = { newList ->
-                    seedBankDataState.value = seedBankDataState.value.copy(plantWhiteList = newList)
-                    syncData()
-                },
-                onAddRequest = onRequestPlantSelection
-            )
-
-            // 3. 黑名单
-            PlantListEditor(
-                title = "黑名单 (BlackList)",
-                description = "禁止选择这些植物",
-                items = seedBankDataState.value.plantBlackList,
-                accentColor = Color(0xFFD32F2F), // 红
-                onListChanged = { newList ->
-                    seedBankDataState.value = seedBankDataState.value.copy(plantBlackList = newList)
-                    syncData()
-                },
-                onAddRequest = onRequestPlantSelection
-            )
 
             Spacer(Modifier.height(32.dp))
         }
@@ -298,32 +356,45 @@ fun SeedBankPropertiesEP(
 
 
 // ==========================================
-// 辅助组件
+// 辅助组件 (更新后)
 // ==========================================
 
 @Composable
-fun SelectionMethodChip(label: String, selected: Boolean, onClick: () -> Unit) {
+fun SelectionMethodChip(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean = true, // 新增参数
+    onClick: () -> Unit
+) {
     FilterChip(
         selected = selected,
         onClick = onClick,
+        enabled = enabled,
         label = { Text(label) },
         leadingIcon = if (selected) {
             { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) }
         } else null,
         colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = Color(0xFFE8F5E9),
-            selectedLabelColor = Color(0xFF2E7D32)
+            selectedContainerColor = if (enabled) Color(0xFFE8F5E9) else Color.LightGray.copy(alpha = 0.3f),
+            selectedLabelColor = if (enabled) Color(0xFF2E7D32) else Color.Gray,
+            disabledContainerColor = Color.Transparent,
+            disabledLabelColor = Color.Gray
         )
     )
 }
 
+/**
+ * 通用资源列表编辑器 (原 PlantListEditor)
+ * 支持显示植物或僵尸名称
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PlantListEditor(
+fun ResourceListEditor(
     title: String,
     description: String,
     items: MutableList<String>,
     accentColor: Color,
+    isZombie: Boolean, // 新增参数：区分是植物还是僵尸
     onListChanged: (MutableList<String>) -> Unit,
     onAddRequest: ((String) -> Unit) -> Unit
 ) {
@@ -364,11 +435,18 @@ fun PlantListEditor(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items.forEachIndexed { index, plantId ->
+                    items.forEachIndexed { index, itemId ->
+                        // 根据 isZombie 决定解析方式
+                        val displayName = if (isZombie) {
+                            ZombieRepository.getName(itemId)
+                        } else {
+                            PlantRepository.getName(itemId)
+                        }
+
                         InputChip(
                             selected = true,
                             onClick = {},
-                            label = { Text(PlantRepository.getName(plantId)) },
+                            label = { Text(displayName) },
                             trailingIcon = {
                                 Icon(
                                     Icons.Default.Close,

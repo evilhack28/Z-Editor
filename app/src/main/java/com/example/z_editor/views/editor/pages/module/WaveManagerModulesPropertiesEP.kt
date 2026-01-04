@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,9 +65,9 @@ import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
-import com.example.z_editor.views.editor.NumberInputInt
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -84,7 +85,6 @@ fun WaveManagerModulePropertiesEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // 1. 初始化并对齐数据
     val moduleDataState = remember {
         val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
         val initialData = try {
@@ -93,13 +93,11 @@ fun WaveManagerModulePropertiesEP(
             WaveManagerModuleData()
         }
 
-        // 确保 DynamicZombies 列表不为空
         if (initialData.dynamicZombies.isEmpty()) {
             initialData.dynamicZombies.add(DynamicZombieGroup())
         }
 
         val firstGroup = initialData.dynamicZombies[0]
-        // 如果 ZombieLevel 缺失或长度少于 ZombiePool，进行补齐
         while (firstGroup.zombieLevel.size < firstGroup.zombiePool.size) {
             firstGroup.zombieLevel.add(1)
         }
@@ -109,24 +107,33 @@ fun WaveManagerModulePropertiesEP(
 
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    // 2. 校验逻辑：检查 WaveManagerProps 指向
     val actualWaveMgrAlias = remember(rootLevelFile.objects) {
         rootLevelFile.objects.find { it.objClass == "WaveManagerProperties" }?.aliases?.firstOrNull()
     }
     val currentPropsAlias = RtidParser.parse(moduleDataState.value.waveManagerProps)?.alias
     val isPropsValid = actualWaveMgrAlias != null && currentPropsAlias == actualWaveMgrAlias
 
-    // 辅助同步函数
     fun sync() {
         rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
             it.objData = gson.toJsonTree(moduleDataState.value)
         }
     }
 
+    val hasLastStandModule = remember(rootLevelFile.objects) {
+        rootLevelFile.objects.any { it.objClass == "LastStandMinigameProperties" }
+    }
+
+    LaunchedEffect(hasLastStandModule) {
+        if (hasLastStandModule && moduleDataState.value.manualStartup != true) {
+            moduleDataState.value = moduleDataState.value.copy(manualStartup = true)
+            sync()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures(onTap = {
-                focusManager.clearFocus() // 点击空白处清除焦点
+                focusManager.clearFocus()
             })
         },
         topBar = {

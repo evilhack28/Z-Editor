@@ -1,4 +1,4 @@
-package com.example.z_editor.views.editor
+package com.example.z_editor.views.editor.tabs
 
 
 import android.annotation.SuppressLint
@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
@@ -72,7 +73,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.EventRegistry
@@ -87,6 +91,8 @@ import com.example.z_editor.data.WavePointAnalysis
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
+import com.example.z_editor.views.editor.pages.others.EventChip
+import com.example.z_editor.views.editor.pages.others.SettingEntryCard
 
 /**
  * 波次时间轴 Tab 页面内容
@@ -137,7 +143,7 @@ fun WaveTimelineTab(
                     text = "当前关卡启用了波次管理模块，但缺少存储波次数据的实体对象 (WaveManagerProperties)。",
                     fontSize = 14.sp,
                     color = Color.Gray,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(24.dp))
                 Button(
@@ -166,7 +172,7 @@ fun WaveTimelineTab(
     var copyTargetInput by remember { mutableStateOf("") }
 
     var eventToDeleteRtid by remember { mutableStateOf<String?>(null) }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
 
     var eventToMove by remember { mutableStateOf<String?>(null) }
     var moveSourceWaveIndex by remember { mutableStateOf<Int?>(null) }
@@ -248,12 +254,11 @@ fun WaveTimelineTab(
             rootLevelFile.objects.removeAll { it.aliases?.contains(alias) == true }
             Toast.makeText(
                 context,
-                "这是最后一份引用，已彻底删除实体数据",
+                "已彻底删除实体数据",
                 Toast.LENGTH_SHORT
             ).show()
         }
-
-        onWavesChanged() // 触发索引刷新
+        onWavesChanged()
     }
 
     // 校验失效引用
@@ -521,7 +526,7 @@ fun WaveTimelineTab(
                     onValueChange = { moveTargetInput = it },
                     label = { Text("移动至波次序号") },
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             },
             dismissButton = {
@@ -824,7 +829,7 @@ fun WaveTimelineTab(
 
         itemsIndexed(
             items = waveManager.waves,
-            key = { index, _ -> "wave_row_$index" }
+            key = { index, _ -> "wave_row_${index}_${refreshTrigger}" }
         ) { index, waveEvents ->
             val waveIndex = index + 1
             val isFlagWave = (waveIndex % interval == 0 || waveIndex == waveManager.waves.size)

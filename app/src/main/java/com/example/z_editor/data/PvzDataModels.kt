@@ -38,7 +38,8 @@ data class LevelDefinitionData(
 // === 波次管理器 ===
 data class WaveManagerModuleData(
     @SerializedName("DynamicZombies") var dynamicZombies: MutableList<DynamicZombieGroup> = mutableListOf(),
-    @SerializedName("WaveManagerProps") var waveManagerProps: String = ""
+    @SerializedName("WaveManagerProps") var waveManagerProps: String = "",
+    @SerializedName("ManualStartup") var manualStartup: Boolean? = null
 )
 
 data class DynamicZombieGroup(
@@ -64,6 +65,12 @@ data class WaveManagerData(
     // 注意：Waves 是二维数组 [ ["RTID(Wave1)"], ["RTID(Wave8)", "RTID(Portal)"] ]
 )
 
+// === 坚不可摧模块 ===
+data class LastStandMinigamePropertiesData(
+    @SerializedName("StartingSun") var startingSun: Int = 2000,
+    @SerializedName("StartingPlantfood") var startingPlantfood: Int = 0
+)
+
 // === 阳光掉落模块 ===
 data class SunDropperPropertiesData(
     @SerializedName("InitialSunDropDelay") var initialSunDropDelay: Double = 2.0,
@@ -80,7 +87,8 @@ data class SeedBankData(
     @SerializedName("PlantBlackList") var plantBlackList: MutableList<String> = mutableListOf(),
     @SerializedName("SelectionMethod") var selectionMethod: String = "chooser",
     @SerializedName("GlobalLevel") var globalLevel: Int? = null,
-    @SerializedName("OverrideSeedSlotsCount") var overrideSeedSlotsCount: Int? = 8
+    @SerializedName("OverrideSeedSlotsCount") var overrideSeedSlotsCount: Int? = 8,
+    @SerializedName("ZombieMode") var zombieMode: Boolean? = null
 )
 
 // === 传送带模块 ===
@@ -262,6 +270,7 @@ data class TileLocationData(
     @SerializedName("mY") var my: Int = 0
 )
 
+
 // ======================== 2. 物体属性解析 ========================
 
 // === 僵尸属性解析 ===
@@ -425,4 +434,33 @@ data class DinoWaveActionPropsData(
     @SerializedName("DinoRow") var dinoRow: Int = 2,
     @SerializedName("DinoType") var dinoType: String = "raptor",
     @SerializedName("DinoWaveDuration") var dinoWaveDuration: Int = 2
+)
+
+// ======================== 4. 特殊模式模块数据定义 ========================
+
+// === 罐子内容配置===
+data class VaseBreakerPresetData(
+    @SerializedName("MinColumnIndex") var minColumnIndex: Int = 4,
+    @SerializedName("MaxColumnIndex") var maxColumnIndex: Int = 8,
+    @SerializedName("NumColoredPlantVases") var numColoredPlantVases: Int = 0,
+    @SerializedName("NumColoredZombieVases") var numColoredZombieVases: Int = 0,
+    @SerializedName("Vases") var vases: MutableList<VaseDefinition> = mutableListOf()
+)
+
+data class VaseDefinition(
+    @SerializedName("ZombieTypeName") var zombieTypeName: String? = null,
+    @SerializedName("PlantTypeName") var plantTypeName: String? = null,
+    @SerializedName("CollectableTypeName") var collectableTypeName: String? = null,
+    @SerializedName("Count") var count: Int = 1
+)
+
+// === 砸罐子环境配置 ===
+class VaseBreakerArcadeModuleData
+
+// === 砸罐子流程配置 ===
+class VaseBreakerFlowModuleData
+
+// === 我是僵尸模块 ===
+data class EvilDavePropertiesData(
+    @SerializedName("PlantDistance") var plantDistance: Int = 4
 )

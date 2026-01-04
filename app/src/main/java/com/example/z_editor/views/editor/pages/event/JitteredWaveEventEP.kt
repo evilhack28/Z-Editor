@@ -68,11 +68,11 @@ import com.example.z_editor.data.WaveActionData
 import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.ZombieSpawnData
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
-import com.example.z_editor.views.editor.LaneRow
-import com.example.z_editor.views.editor.NumberInputInt
-import com.example.z_editor.views.editor.ZombieEditSheetContent
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.LaneRow
+import com.example.z_editor.views.editor.pages.others.NumberInputInt
+import com.example.z_editor.views.editor.pages.others.ZombieEditSheetContent
 import com.google.gson.Gson
 import kotlin.math.roundToInt
 

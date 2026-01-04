@@ -44,8 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.WaveManagerData
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +92,6 @@ fun WaveManagerPropertiesEP(
     val currentHugeDelayVal = waveManager.zombieCountDownHugeWaveDelay ?: defaultHugeDelay
     var hugeWaveInput by remember { mutableStateOf(currentHugeDelayVal.toString()) }
 
-    // 统一保存逻辑：时间字段变化时调用
     fun saveTimeSettings() {
         val inputFirst = firstWaveInput.toIntOrNull() ?: defaultFirstWaveSecs
         if (hasConveyor) {
@@ -154,7 +151,7 @@ fun WaveManagerPropertiesEP(
                 )
                 HelpSection(
                     title = "刷新血线",
-                    body = "每一波的刷新血线都在最大值和最小值之间浮动。当前波次内所有方式生成的僵尸的总血量低于这一比例就会自动刷新下一波，"
+                    body = "每一波的刷新血线都在最大值和最小值之间浮动。当前波次内通过自然出现方式生成的僵尸的总血量低于这一比例就会自动刷新下一波，"
                 )
                 HelpSection(
                     title = "时间控制",

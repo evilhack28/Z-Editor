@@ -1,4 +1,4 @@
-package com.example.z_editor.views.editor
+package com.example.z_editor.views.editor.tabs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,8 +53,8 @@ import com.example.z_editor.data.ModuleRegistry
 import com.example.z_editor.data.PvzObject
 import com.example.z_editor.data.repository.ReferenceRepository
 import com.example.z_editor.data.RtidParser
+import com.example.z_editor.views.editor.pages.others.SettingEntryCard
 
-// ModuleUIInfo 保持不变
 data class ModuleUIInfo(
     val rtid: String,
     val alias: String,
@@ -64,6 +64,37 @@ data class ModuleUIInfo(
     val icon: ImageVector,
     val isCore: Boolean
 )
+
+data class ModuleConflictRule(
+    val conflictingClasses: Set<String>,
+    val title: String = "模块逻辑冲突",
+    val description: String? = null
+)
+
+object ConflictRegistry {
+    val rules = listOf(
+        ModuleConflictRule(
+            conflictingClasses = setOf("SeedBankProperties", "ConveyorSeedBankProperties"),
+            description = "种子库与传送带模块同时存在，需要确保种子库处于preset状态。"
+        ),
+        ModuleConflictRule(
+            conflictingClasses = setOf("VaseBreakerPresetProperties", "StandardLevelIntroProperties"),
+            description = "砸罐子模式下不需要添加开局转场动画。"
+        ),
+        ModuleConflictRule(
+            conflictingClasses = setOf("LastStandMinigameProperties", "StandardLevelIntroProperties"),
+            description = "坚不可摧模式下不需要添加开局转场动画。"
+        ),
+        ModuleConflictRule(
+            conflictingClasses = setOf("EvilDaveProperties", "ZombiesDeadWinConProperties"),
+            description = "我是僵尸模式下不能添加僵尸掉落模块。"
+        ),
+        ModuleConflictRule(
+            conflictingClasses = setOf("EvilDaveProperties", "ZombiesAteYourBrainsProperties"),
+            description = "我是僵尸模式下不能添加僵尸胜利判定。"
+        )
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,9 +143,19 @@ fun LevelSettingsTab(
         currentModulesList.map { it.objClass }.toSet()
     }
 
-    val hasSeedBank = existingObjClasses.contains("SeedBankProperties")
-    val hasConveyor = existingObjClasses.contains("ConveyorSeedBankProperties")
-    val hasModuleConflict = hasSeedBank && hasConveyor
+    val activeConflicts = remember(existingObjClasses) {
+        ConflictRegistry.rules.filter { rule ->
+            existingObjClasses.containsAll(rule.conflictingClasses)
+        }.map { rule ->
+            val displayDesc = rule.description ?: run {
+                val names = rule.conflictingClasses.map { cls ->
+                    ModuleRegistry.getMetadata(cls).title
+                }
+                "${names.joinToString(" 与 ")} 发生逻辑冲突，建议只保留其中一个。"
+            }
+            rule to displayDesc
+        }
+    }
 
     val missingEssentials = missingModules
 
@@ -207,32 +248,30 @@ fun LevelSettingsTab(
             }
         }
 
-        if (hasModuleConflict) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)), // 浅红色背景
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(12.dp))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Error, null, tint = Color(0xFFD32F2F))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "模块逻辑冲突",
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD32F2F)
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
+        items(activeConflicts) { (rule, description) ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)), // 浅红色背景
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(12.dp))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Error, null, tint = Color(0xFFD32F2F))
+                        Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "种子库与传送带模块同时存在，在游戏中会导致 UI 显示异常或逻辑错误，可能引发闪退。",
-                            fontSize = 12.sp,
-                            color = Color(0xFFB71C1C),
-                            lineHeight = 18.sp
+                            text = rule.title,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFD32F2F)
                         )
                     }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = description,
+                        fontSize = 12.sp,
+                        color = Color(0xFFB71C1C),
+                        lineHeight = 18.sp
+                    )
                 }
             }
         }

@@ -10,6 +10,7 @@ object ObjectOrderRegistry {
         "ConveyorSeedBankProperties",
         "SunDropperProperties",
         "SunBombChallengeProperties",
+        "LastStandMinigameProperties",
 
         "PiratePlankProperties",
         "TideProperties",
@@ -21,12 +22,14 @@ object ObjectOrderRegistry {
         "InitialGridItemProperties",
 
 
+        "EvilDaveProperties",
+
         "StarChallengeModuleProperties",
 
         "StarChallengeBeatTheLevelProps",
         "StarChallengeSaveMowerProps",
         "StarChallengePlantFoodNonuseProps",
-        "StarChallengePlantSurviveProps",
+        "StarChallengePlantsSurviveProps",
         "StarChallengeZombieDistanceProps",
         "StarChallengeSunProducedProps",
         "StarChallengeSunUsedProps",
@@ -38,6 +41,8 @@ object ObjectOrderRegistry {
         "StarChallengeSimultaneousPlantsProps",
         "StarChallengeUnfreezePlantsProps",
         "StarChallengeBlowZombieProps",
+
+        "VaseBreakerPresetProperties",
 
 
         "WaveManagerModuleProperties",

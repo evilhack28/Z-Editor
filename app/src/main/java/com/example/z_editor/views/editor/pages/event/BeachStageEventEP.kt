@@ -34,7 +34,10 @@ import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
-import com.example.z_editor.views.editor.*
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputDouble
+import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -279,7 +282,13 @@ fun BeachStageEventEP(
                             )
                             NumberInputDouble(
                                 value = actionDataState.value.timeBeforeFullSpawn,
-                                onValueChange = { sync(actionDataState.value.copy(timeBeforeFullSpawn = it)) },
+                                onValueChange = {
+                                    sync(
+                                        actionDataState.value.copy(
+                                            timeBeforeFullSpawn = it
+                                        )
+                                    )
+                                },
                                 label = "生成前摇 (秒)",
                                 modifier = Modifier.weight(1f),
                                 color = themeColor

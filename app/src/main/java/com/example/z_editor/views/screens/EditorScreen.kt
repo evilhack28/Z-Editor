@@ -18,11 +18,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.Grid4x4
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShieldMoon
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,145 +35,87 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import com.example.z_editor.data.EditorSubScreen
-import com.example.z_editor.data.EventMetadata
 import com.example.z_editor.data.LevelParser
 import com.example.z_editor.data.ModuleMetadata
 import com.example.z_editor.data.ModuleRegistry
 import com.example.z_editor.data.ParsedLevelData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.PvzObject
+import com.example.z_editor.data.RtidParser
+import com.example.z_editor.data.StarChallengeModuleData
+import com.example.z_editor.data.WaveManagerData
+import com.example.z_editor.data.WaveManagerModuleData
 import com.example.z_editor.data.repository.ChallengeTypeInfo
 import com.example.z_editor.data.repository.LevelRepository
 import com.example.z_editor.data.repository.PlantRepository
 import com.example.z_editor.data.repository.ReferenceRepository
 import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
-import com.example.z_editor.data.RtidParser
-import com.example.z_editor.data.StarChallengeModuleData
-import com.example.z_editor.data.WaveManagerData
-import com.example.z_editor.data.WaveManagerModuleData
-import com.example.z_editor.views.editor.LevelSettingsTab
-import com.example.z_editor.views.editor.WaveTimelineTab
-import com.example.z_editor.views.editor.pages.event.BeachStageEventEP
-import com.example.z_editor.views.editor.pages.event.BlackHoleEventEP
-import com.example.z_editor.views.editor.pages.event.DinoEventEP
-import com.example.z_editor.views.editor.pages.event.FrostWindEventEP
-import com.example.z_editor.views.editor.pages.event.InvalidEventEP
-import com.example.z_editor.views.editor.pages.event.ModifyConveyorEventEP
-import com.example.z_editor.views.editor.pages.event.ParachuteRainEventEP
-import com.example.z_editor.views.editor.pages.event.RaidingPartyEventEP
-import com.example.z_editor.views.editor.pages.event.SpawnModernPortalsWaveActionPropsEP
-import com.example.z_editor.views.editor.pages.event.SpawnZombiesFromGroundEventEP
-import com.example.z_editor.views.editor.pages.event.SpawnZombiesJitteredWaveActionPropsEP
-import com.example.z_editor.views.editor.pages.event.StormZombieSpawnerPropsEP
-import com.example.z_editor.views.editor.pages.event.TidalChangeEventEP
-import com.example.z_editor.views.editor.pages.module.ConveyorSeedBankPropertiesEP
-import com.example.z_editor.views.editor.pages.module.PiratePlankPropertiesEP
-import com.example.z_editor.views.editor.pages.module.InitialGridItemEntryEP
-import com.example.z_editor.views.editor.pages.module.InitialPlantEntryEP
-import com.example.z_editor.views.editor.pages.module.InitialZombieEntryEP
-import com.example.z_editor.views.editor.pages.module.PowerTilePropertiesEP
-import com.example.z_editor.views.editor.pages.module.RailcartPropertiesEP
-import com.example.z_editor.views.editor.pages.module.SeedBankPropertiesEP
-import com.example.z_editor.views.editor.pages.module.StarChallengeModulePropertiesEP
-import com.example.z_editor.views.editor.pages.module.SunBombChallengePropertiesEP
-import com.example.z_editor.views.editor.pages.module.SunDropperPropertiesEP
-import com.example.z_editor.views.editor.pages.module.TidePropertiesEP
-import com.example.z_editor.views.editor.pages.module.WaveManagerModulePropertiesEP
-import com.example.z_editor.views.editor.pages.others.LevelDefinitionEP
-import com.example.z_editor.views.editor.pages.others.UnknownEP
-import com.example.z_editor.views.editor.pages.others.WaveManagerPropertiesEP
 import com.google.gson.Gson
 
 private val gson = Gson()
-
-enum class EditorTabType(val title: String, val icon: ImageVector) {
-    Settings("关卡设置", Icons.Default.Settings),
-    Timeline("波次时间轴", Icons.Default.Timeline),
-    VaseBreaker("罐子布局", Icons.Default.Grid4x4),
-    BossFight("僵王属性", Icons.Default.ShieldMoon),
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(fileName: String, onBack: () -> Unit) {
     val context = LocalContext.current
 
-    // ======================== 1. 核心数据状态 ========================
-
+    // ======================== 状态管理 ========================
     var currentFileName by remember { mutableStateOf(fileName) }
-
     var rootLevelFile by remember { mutableStateOf<PvzLevelFile?>(null) }
     var parsedData by remember { mutableStateOf<ParsedLevelData?>(null) }
 
     var availableTabs by remember { mutableStateOf(listOf(EditorTabType.Settings)) }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var currentSubScreen by remember { mutableStateOf<EditorSubScreen>(EditorSubScreen.None) }
-    var refreshTrigger by remember { mutableIntStateOf(0) } // 局部刷新触发器
+    var refreshTrigger by remember { mutableIntStateOf(0) }
 
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameInput by remember { mutableStateOf("") }
+    var missingModules by remember { mutableStateOf<List<ModuleMetadata>>(emptyList()) }
 
-
+    // 滚动状态保持
     val lazyListStates = remember { mutableMapOf<String, LazyListState>() }
     val scrollStates = remember { mutableMapOf<String, ScrollState>() }
 
-    fun getLazyState(key: String): LazyListState {
-        return lazyListStates.getOrPut(key) { LazyListState(0, 0) }
-    }
+    // [修复2] ScrollState 需要传入初始值 0
+    fun getLazyState(key: String) = lazyListStates.getOrPut(key) { LazyListState() }
+    fun getScrollState(key: String) = scrollStates.getOrPut(key) { ScrollState(0) }
 
-    fun getScrollState(key: String): ScrollState {
-        return scrollStates.getOrPut(key) { ScrollState(0) }
-    }
-
-    var missingModules by remember { mutableStateOf<List<ModuleMetadata>>(emptyList()) }
-
+    // 选择器状态
     var previousSubScreen by remember { mutableStateOf<EditorSubScreen>(EditorSubScreen.None) }
-    var plantSelectionCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var genericSelectionCallback by remember { mutableStateOf<((Any) -> Unit)?>(null) }
 
-    fun launchPlantSelector(callback: (String) -> Unit) {
-        previousSubScreen = currentSubScreen
-        plantSelectionCallback = callback
-        currentSubScreen = EditorSubScreen.PlantSelection
-    }
+    // ======================== 核心逻辑 ========================
 
-    var zombieSelectionCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
-
-    fun launchZombieSelector(callback: (String) -> Unit) {
-        previousSubScreen = currentSubScreen
-        zombieSelectionCallback = callback
-        currentSubScreen = EditorSubScreen.ZombieSelection
-    }
-
-    var gridItemSelectionCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
-
-    fun launchGridItemSelector(callback: (String) -> Unit) {
-        previousSubScreen = currentSubScreen
-        gridItemSelectionCallback = callback
-        currentSubScreen = EditorSubScreen.GridItemSelection
-    }
-
-    var challengeSelectionCallback by remember { mutableStateOf<((ChallengeTypeInfo) -> Unit)?>(null) }
-
-    // 启动挑战选择器的辅助函数
-    fun launchChallengeSelector(callback: (ChallengeTypeInfo) -> Unit) {
-        previousSubScreen = currentSubScreen
-        challengeSelectionCallback = callback
-        currentSubScreen = EditorSubScreen.ChallengeSelection
+    fun updateWaveManagerManualStartup(enable: Boolean) {
+        if (parsedData == null || rootLevelFile == null) return
+        val waveModObj =
+            rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" } ?: return
+        try {
+            val modData = gson.fromJson(waveModObj.objData, WaveManagerModuleData::class.java)
+            val targetValue = if (enable) true else null
+            if (modData.manualStartup != targetValue) {
+                modData.manualStartup = targetValue
+                waveModObj.objData = gson.toJsonTree(modData)
+                parsedData = parsedData!!.copy(waveModule = modData)
+                refreshTrigger++
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun recalculateLevelState() {
@@ -190,39 +128,32 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             } ?: emptyList())
 
         val newTabs = mutableListOf(EditorTabType.Settings)
-        if (existingClasses.contains("WaveManagerModuleProperties")) {
-            newTabs.add(EditorTabType.Timeline)
-        }
-        if (existingClasses.contains("VaseBreakerPresetProperties")) {
-            newTabs.add(EditorTabType.VaseBreaker)
-        }
-        if (existingClasses.contains("ZombossBattleModuleProperties")) {
-            newTabs.add(EditorTabType.BossFight)
-        }
+        if (existingClasses.contains("WaveManagerModuleProperties")) newTabs.add(EditorTabType.Timeline)
+        if (existingClasses.contains("EvilDaveProperties")) newTabs.add(EditorTabType.IZombie)
+        if (existingClasses.contains("VaseBreakerPresetProperties")) newTabs.add(EditorTabType.VaseBreaker)
+        if (existingClasses.contains("ZombossBattleModuleProperties")) newTabs.add(EditorTabType.BossFight)
         availableTabs = newTabs
 
         val missingList = mutableListOf<String>()
-
-        if (!existingClasses.contains("StandardLevelIntroProperties")) {
-            missingList.add("StandardLevelIntroProperties")
-        }
         if (!existingClasses.contains("ZombiesAteYourBrainsProperties")) {
-            missingList.add("ZombiesAteYourBrainsProperties")
+            if(!existingClasses.contains("EvilDaveProperties")) missingList.add("ZombiesAteYourBrainsProperties")
         }
         if (!existingClasses.contains("ZombiesDeadWinConProperties")) {
-            missingList.add("ZombiesDeadWinConProperties")
+            if(!existingClasses.contains("EvilDaveProperties")) missingList.add("ZombiesDeadWinConProperties")
         }
-        if (!existingClasses.contains("CustomLevelModuleProperties")) {
-            missingList.add("CustomLevelModuleProperties")
+        if (!existingClasses.contains("CustomLevelModuleProperties")) missingList.add("CustomLevelModuleProperties")
+        if (!existingClasses.contains("StandardLevelIntroProperties")) {
+            if(!existingClasses.contains("VaseBreakerPresetProperties") &&
+                !existingClasses.contains("LastStandMinigameProperties")) missingList.add("StandardLevelIntroProperties")
         }
-
-        // B. 条件性缺失 (占位逻辑)
-        // 例如：检测到有 "ChallengeModule" 但没有 "ChallengeSettings" 时提示
-        /*
-        if (existingClasses.contains("ChallengeModuleProperties") && !existingClasses.contains("ChallengeSettingsProperties")) {
-             missingList.add("ChallengeSettingsProperties")
+        if (existingClasses.contains("VaseBreakerPresetProperties")) {
+            if (!existingClasses.contains("VaseBreakerArcadeModuleProperties")) missingList.add("VaseBreakerArcadeModuleProperties")
+            if (!existingClasses.contains("VaseBreakerFlowModuleProperties")) missingList.add("VaseBreakerFlowModuleProperties")
         }
-        */
+        if (existingClasses.contains("EvilDaveProperties")) {
+            if (!existingClasses.contains("InitialPlantEntryProperties")) missingList.add("InitialPlantEntryProperties")
+            if (!existingClasses.contains("SeedBankProperties")) missingList.add("SeedBankProperties")
+        }
 
         missingModules = missingList.mapNotNull { objClass ->
             val meta = ModuleRegistry.getMetadata(objClass)
@@ -230,45 +161,34 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         }
     }
 
-    // ======================== 2. 初始化与加载 ========================
-
-    // 初始化：加载参考数据库 & 加载关卡文件
     LaunchedEffect(currentFileName) {
         ReferenceRepository.init(context)
         ZombieRepository.init(context)
         ZombiePropertiesRepository.init(context)
         PlantRepository.init(context)
-
         val file = LevelRepository.loadLevel(context, currentFileName)
         if (file != null) {
             rootLevelFile = file
             parsedData = LevelParser.parseLevel(file)
-
             recalculateLevelState()
             selectedTabIndex = 0
-
         } else {
             Toast.makeText(context, "文件加载失败", Toast.LENGTH_SHORT).show()
             onBack()
         }
     }
+    LaunchedEffect(refreshTrigger) { recalculateLevelState() }
 
-    LaunchedEffect(refreshTrigger) {
-        recalculateLevelState()
-    }
+    // --- 业务操作 ---
 
-    // ======================== 3. 业务逻辑方法 ========================
     fun performSave(isExit: Boolean = false) {
         if (rootLevelFile == null || parsedData == null) return
         try {
-            rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }?.let {
-                it.objData = gson.toJsonTree(parsedData!!.levelDef)
-            }
-            rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.let {
-                it.objData = gson.toJsonTree(parsedData!!.waveManager)
-            }
+            rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }?.objData =
+                gson.toJsonTree(parsedData!!.levelDef)
+            rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.objData =
+                gson.toJsonTree(parsedData!!.waveManager)
             LevelRepository.saveAndExport(context, currentFileName, rootLevelFile!!)
-
             val msg = if (isExit) "已自动保存并退出" else "保存成功"
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
@@ -276,6 +196,12 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         }
     }
 
+    fun handleExit() {
+        performSave(isExit = true)
+        onBack()
+    }
+
+    // 局部函数：重命名
     fun performRename() {
         if (!renameInput.endsWith(".json", true)) {
             Toast.makeText(context, "文件名须以 .json 结尾", Toast.LENGTH_SHORT).show()
@@ -291,206 +217,306 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         }
     }
 
-    fun handleExit() {
-        performSave(isExit = true)
-        onBack()
-    }
-
-    fun handleRemoveModule(rtid: String) {
-        if (parsedData == null || parsedData!!.levelDef == null || rootLevelFile == null) return
-
-        val info = RtidParser.parse(rtid)
-        val alias = info?.alias ?: ""
-
-        val objClass = parsedData!!.objectMap[alias]?.objClass
-
-        val removed = parsedData!!.levelDef!!.modules.remove(rtid)
-        if (!removed) return
-
-        if (objClass == "StarChallengeModuleProperties") {
-            val moduleObj = rootLevelFile!!.objects.find { it.aliases?.contains(alias) == true }
-
-            if (moduleObj != null) {
-                try {
-                    val challengeData = gson.fromJson(moduleObj.objData, StarChallengeModuleData::class.java)
-
-                    val allChallengeRtids = challengeData.challenges.flatten()
-
-                    var deletedCount = 0
-
-                    allChallengeRtids.forEach { challengeRtid ->
-                        val cInfo = RtidParser.parse(challengeRtid)
-                        if (cInfo?.source == "CurrentLevel") {
-                            val removed = rootLevelFile!!.objects.removeAll {
-                                it.aliases?.contains(cInfo.alias) == true
-                            }
-                            if (removed) deletedCount++
-                        }
-                    }
-                    if (deletedCount > 0) {
-                        Toast.makeText(context, "移除了 $deletedCount 个挑战模块", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+    fun navigateBackToMain() {
+        if (rootLevelFile != null && parsedData != null) {
+            val newObjectMap =
+                rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+            val waveModObj =
+                rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
+            val waveMgrObj = rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
+            parsedData = parsedData!!.copy(
+                objectMap = newObjectMap,
+                waveModule = waveModObj?.let {
+                    gson.fromJson(
+                        it.objData,
+                        WaveManagerModuleData::class.java
+                    )
+                },
+                waveManager = waveMgrObj?.let {
+                    gson.fromJson(
+                        it.objData,
+                        WaveManagerData::class.java
+                    )
                 }
-            }
+            )
+            refreshTrigger++
         }
-
-        if (info?.source == "CurrentLevel") {
-            rootLevelFile!!.objects.removeAll { it.aliases?.contains(alias) == true }
-        }
-
-        if (objClass == "WaveManagerModuleProperties") {
-            parsedData = parsedData!!.copy(waveModule = null)
-        }
-
-        val newObjectMap =
-            rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
-        parsedData = parsedData!!.copy(objectMap = newObjectMap)
-
-        refreshTrigger++
-        Toast.makeText(context, "已移除模块", Toast.LENGTH_SHORT).show()
-    }
-
-    fun handleAddEvent(meta: EventMetadata, waveIndex: Int) {
-        if (parsedData?.waveManager == null || rootLevelFile == null) return
-
-        val waveEvents = parsedData!!.waveManager!!.waves[waveIndex - 1]
-
-        val prefix = "Wave${waveIndex}${meta.defaultAlias}"
-
-        var count = 0
-        var newAlias = "$prefix$count"
-
-        while (rootLevelFile!!.objects.any { it.aliases?.contains(newAlias) == true }) {
-            count++
-            newAlias = "$prefix$count"
-        }
-
-        val newRtid = RtidParser.build(newAlias, "CurrentLevel")
-
-        val newObj = PvzObject(
-            aliases = listOf(newAlias),
-            objClass = meta.defaultObjClass,
-            objData = gson.toJsonTree(meta.initialDataFactory())
-        )
-        rootLevelFile!!.objects.add(newObj)
-
-        waveEvents.add(newRtid)
-
-        rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.let {
-            it.objData = gson.toJsonTree(parsedData!!.waveManager)
-        }
-
-        val newObjectMap =
-            rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
-        parsedData = parsedData!!.copy(objectMap = newObjectMap)
-
-        refreshTrigger++
         currentSubScreen = EditorSubScreen.None
     }
 
-    fun handleAddModule(meta: ModuleMetadata) {
-        if (parsedData == null || rootLevelFile == null) return
-        val newRtid = RtidParser.build(meta.defaultAlias, meta.defaultSource)
+    // ======================== Action 定义 ========================
+    val actions = remember(rootLevelFile, parsedData) {
+        EditorActions(
+            navigateTo = { currentSubScreen = it },
+            navigateBack = { navigateBackToMain() },
 
-        if (meta.defaultSource == "CurrentLevel") {
-            val exists =
-                rootLevelFile!!.objects.any { it.aliases?.contains(meta.defaultAlias) == true }
-            if (!exists && meta.initialDataFactory != null) {
-                var initialData = meta.initialDataFactory.invoke()
-                if (initialData is WaveManagerModuleData) {
-                    val actualWaveMgrAlias = rootLevelFile!!.objects.find {
-                        it.objClass == "WaveManagerProperties"
-                    }?.aliases?.firstOrNull() ?: "WaveManagerProps"
-                    initialData = initialData.copy(
-                        waveManagerProps = RtidParser.build(actualWaveMgrAlias, "CurrentLevel")
+            onRemoveModule = { rtid ->
+                val info = RtidParser.parse(rtid)
+                val alias = info?.alias ?: ""
+                val objClass = parsedData!!.objectMap[alias]?.objClass
+
+                val removed = parsedData!!.levelDef!!.modules.remove(rtid)
+
+                if (removed) {
+                    if (objClass == "StarChallengeModuleProperties") {
+                        val moduleObj = rootLevelFile!!.objects.find { it.aliases?.contains(alias) == true }
+                        if (moduleObj != null) {
+                            try {
+                                val challengeData = gson.fromJson(moduleObj.objData, StarChallengeModuleData::class.java)
+                                val allChallengeRtids = challengeData.challenges.flatten()
+                                var deletedCount = 0
+                                allChallengeRtids.forEach { challengeRtid ->
+                                    val cInfo = RtidParser.parse(challengeRtid)
+                                    if (cInfo?.source == "CurrentLevel") {
+                                        if (rootLevelFile!!.objects.removeAll { it.aliases?.contains(cInfo.alias) == true }) deletedCount++
+                                    }
+                                }
+                                if (deletedCount > 0) Toast.makeText(context, "移除了 $deletedCount 个挑战模块", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) { e.printStackTrace() }
+                        }
+                    }
+
+                    if (info?.source == "CurrentLevel") {
+                        rootLevelFile!!.objects.removeAll { it.aliases?.contains(alias) == true }
+                    }
+
+                    if (objClass == "WaveManagerModuleProperties") parsedData = parsedData!!.copy(waveModule = null)
+                    if (objClass == "LastStandMinigameProperties") updateWaveManagerManualStartup(false)
+
+                    val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+
+                    val currentLevelDef = parsedData!!.levelDef!!
+                    val newLevelDef = currentLevelDef.copy(
+                        modules = ArrayList(currentLevelDef.modules)
                     )
+
+                    parsedData = parsedData!!.copy(
+                        levelDef = newLevelDef,
+                        objectMap = newObjectMap
+                    )
+
+                    refreshTrigger++
+                    Toast.makeText(context, "已移除模块", Toast.LENGTH_SHORT).show()
                 }
+            },
+
+            onAddModule = { meta ->
+                val newRtid = RtidParser.build(meta.defaultAlias, meta.defaultSource)
+                if (meta.defaultSource == "CurrentLevel") {
+                    val exists =
+                        rootLevelFile!!.objects.any { it.aliases?.contains(meta.defaultAlias) == true }
+                    if (!exists && meta.initialDataFactory != null) {
+                        var initialData = meta.initialDataFactory.invoke()
+                        if (initialData is WaveManagerModuleData) {
+                            val actualWaveMgrAlias =
+                                rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.aliases?.firstOrNull()
+                                    ?: "WaveManagerProps"
+                            initialData = initialData.copy(
+                                waveManagerProps = RtidParser.build(
+                                    actualWaveMgrAlias,
+                                    "CurrentLevel"
+                                )
+                            )
+                        }
+                        val newObj = PvzObject(
+                            aliases = listOf(meta.defaultAlias),
+                            objClass = ModuleRegistry.getAllKnownModules().entries.find { it.value == meta }?.key
+                                ?: "Unknown",
+                            objData = gson.toJsonTree(initialData)
+                        )
+                        rootLevelFile!!.objects.add(newObj)
+                        val newObjectMap = rootLevelFile!!.objects.associateBy {
+                            it.aliases?.firstOrNull() ?: "unknown"
+                        }
+                        parsedData = parsedData!!.copy(objectMap = newObjectMap)
+                    }
+                }
+                parsedData!!.levelDef?.modules?.add(newRtid)
+                if (meta.defaultAlias == "LastStandMinigame") updateWaveManagerManualStartup(true)
+                refreshTrigger++
+                Toast.makeText(context, "已添加 ${meta.title}", Toast.LENGTH_SHORT).show()
+                currentSubScreen = EditorSubScreen.None
+            },
+
+            onAddEvent = { meta, waveIndex ->
+                val waveEvents = parsedData!!.waveManager!!.waves[waveIndex - 1]
+                val prefix = "Wave${waveIndex}${meta.defaultAlias}"
+                var count = 0
+                var newAlias = "$prefix$count"
+                while (rootLevelFile!!.objects.any { it.aliases?.contains(newAlias) == true }) {
+                    count++; newAlias = "$prefix$count"
+                }
+                val newRtid = RtidParser.build(newAlias, "CurrentLevel")
                 val newObj = PvzObject(
-                    aliases = listOf(meta.defaultAlias),
-                    objClass = ModuleRegistry.getAllKnownModules().entries.find { it.value == meta }?.key
-                        ?: "Unknown",
-                    objData = gson.toJsonTree(meta.initialDataFactory.invoke())
+                    aliases = listOf(newAlias),
+                    objClass = meta.defaultObjClass,
+                    objData = gson.toJsonTree(meta.initialDataFactory())
                 )
                 rootLevelFile!!.objects.add(newObj)
-
+                waveEvents.add(newRtid)
+                rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
+                    ?.let { it.objData = gson.toJsonTree(parsedData!!.waveManager) }
                 val newObjectMap =
                     rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
                 parsedData = parsedData!!.copy(objectMap = newObjectMap)
-            }
-        }
-        parsedData!!.levelDef?.modules?.add(newRtid)
+                refreshTrigger++
+                currentSubScreen = EditorSubScreen.None
+            },
 
-        refreshTrigger++
-        Toast.makeText(context, "已添加 ${meta.title}", Toast.LENGTH_SHORT).show()
+            onWavesChanged = {
+                val currentWaveManager = parsedData!!.waveManager!!
+                val newWaveManager = currentWaveManager.copy(
+                    waves = ArrayList(currentWaveManager.waves)
+                )
+                rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.let {
+                    it.objData = gson.toJsonTree(newWaveManager)
+                }
+                val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+                parsedData = parsedData!!.copy(
+                    objectMap = newObjectMap,
+                    waveManager = newWaveManager
+                )
+                refreshTrigger++
+            },
+
+            onDeleteEventReference = { rtid ->
+                parsedData?.waveManager?.waves?.forEach { wave -> wave.removeAll { it == rtid } }
+                rootLevelFile?.objects?.find { it.objClass == "WaveManagerProperties" }
+                    ?.let { it.objData = gson.toJsonTree(parsedData!!.waveManager) }
+                refreshTrigger++
+                currentSubScreen = EditorSubScreen.None
+            },
+
+            onSaveWaveManager = {
+                rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
+                    ?.let { it.objData = gson.toJsonTree(parsedData!!.waveManager) }
+            },
+
+            onCreateWaveContainer = {
+                if (rootLevelFile != null) {
+                    val defaultData = WaveManagerData(waves = mutableListOf(mutableListOf()))
+                    var newAlias = "WaveManagerProps"
+                    var count = 0
+                    while (rootLevelFile!!.objects.any { it.aliases?.contains(newAlias) == true }) {
+                        count++; newAlias = "WaveManagerProps$count"
+                    }
+                    val newObj = PvzObject(
+                        aliases = listOf(newAlias),
+                        objClass = "WaveManagerProperties",
+                        objData = gson.toJsonTree(defaultData)
+                    )
+                    rootLevelFile!!.objects.add(newObj)
+                    parsedData?.waveModule?.let { mod ->
+                        mod.waveManagerProps = RtidParser.build(newAlias, "CurrentLevel")
+                        rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
+                            ?.let { it.objData = gson.toJsonTree(mod) }
+                    }
+                    val newObjectMap = rootLevelFile!!.objects.associateBy {
+                        it.aliases?.firstOrNull() ?: "unknown"
+                    }
+                    parsedData = parsedData!!.copy(
+                        objectMap = newObjectMap,
+                        waveManager = defaultData,
+                        waveModule = parsedData?.waveModule
+                    )
+                    refreshTrigger++
+                    Toast.makeText(context, "已初始化波次容器 ($newAlias)", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            },
+
+            onStageSelected = { newRtid ->
+                parsedData?.levelDef?.stageModule = newRtid
+                currentSubScreen = EditorSubScreen.BasicInfo
+                refreshTrigger++
+            },
+
+            onAddChallenge = { info ->
+                var alias = info.defaultAlias
+                var count = 0
+                while (rootLevelFile!!.objects.any { it.aliases?.contains(alias) == true }) {
+                    count++; alias = "${info.defaultAlias}$count"
+                }
+                val newData = info.initialDataFactory()
+                val newObj = PvzObject(
+                    aliases = listOf(alias),
+                    objClass = info.objClass,
+                    objData = gson.toJsonTree(newData)
+                )
+                rootLevelFile!!.objects.add(newObj)
+                val newObjectMap =
+                    rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+                parsedData = parsedData!!.copy(objectMap = newObjectMap)
+
+                val challengeModRtid = parsedData!!.levelDef?.modules?.find { modRtid ->
+                    val rtidInfo = RtidParser.parse(modRtid)
+                    val modAlias = rtidInfo?.alias ?: ""
+                    parsedData!!.objectMap[modAlias]?.objClass == "StarChallengeModuleProperties"
+                }
+                if (challengeModRtid != null) {
+                    val challengeModInfo = RtidParser.parse(challengeModRtid)
+                    val challengeModObj = parsedData!!.objectMap[challengeModInfo!!.alias]
+                    if (challengeModObj != null) {
+                        val modData = try {
+                            gson.fromJson(
+                                challengeModObj.objData,
+                                StarChallengeModuleData::class.java
+                            )
+                        } catch (_: Exception) {
+                            StarChallengeModuleData()
+                        }
+                        val newChallengeRtid = RtidParser.build(alias, "CurrentLevel")
+                        if (modData.challenges.isEmpty()) modData.challenges.add(mutableListOf())
+                        modData.challenges[0].add(newChallengeRtid)
+                        challengeModObj.objData = gson.toJsonTree(modData)
+                    }
+                }
+                refreshTrigger++
+            },
+
+            // --- 选择器逻辑 ---
+            onLaunchPlantSelector = { cb ->
+                previousSubScreen = currentSubScreen; genericSelectionCallback =
+                { id -> cb(id as String) }; currentSubScreen = EditorSubScreen.PlantSelection
+            },
+            onLaunchZombieSelector = { cb ->
+                previousSubScreen = currentSubScreen; genericSelectionCallback =
+                { id -> cb(id as String) }; currentSubScreen = EditorSubScreen.ZombieSelection
+            },
+            onLaunchGridItemSelector = { cb ->
+                previousSubScreen = currentSubScreen; genericSelectionCallback =
+                { id -> cb(id as String) }; currentSubScreen = EditorSubScreen.GridItemSelection
+            },
+            onLaunchChallengeSelector = { cb ->
+                previousSubScreen = currentSubScreen; genericSelectionCallback =
+                { info -> cb(info as ChallengeTypeInfo) }; currentSubScreen =
+                EditorSubScreen.ChallengeSelection
+            },
+            onSelectorResult = { result ->
+                genericSelectionCallback?.invoke(result)
+                genericSelectionCallback = null
+                currentSubScreen = previousSubScreen
+                refreshTrigger++
+            },
+            onSelectorCancel = {
+                genericSelectionCallback = null
+                currentSubScreen = previousSubScreen
+            },
+            onChallengeSelected = { info ->
+                (genericSelectionCallback as? ((ChallengeTypeInfo) -> Unit))?.invoke(info)
+                genericSelectionCallback = null
+                currentSubScreen = previousSubScreen
+                refreshTrigger++
+            }
+        )
     }
+
+    // ======================== UI 渲染 ========================
 
     BackHandler(enabled = currentSubScreen != EditorSubScreen.None) {
         currentSubScreen = EditorSubScreen.None
     }
-
-    BackHandler(enabled = currentSubScreen == EditorSubScreen.None) {
-        handleExit()
-    }
-
-    // 处理添加挑战的逻辑
-    fun handleAddChallenge(info: ChallengeTypeInfo) {
-        if (rootLevelFile == null || parsedData == null) return
-
-        var alias = info.defaultAlias
-        var count = 0
-        while (rootLevelFile!!.objects.any { it.aliases?.contains(alias) == true }) {
-            count++
-            alias = "${info.defaultAlias}$count"
-        }
-
-        val newData = info.initialDataFactory()
-        val newObj = PvzObject(
-            aliases = listOf(alias),
-            objClass = info.objClass,
-            objData = gson.toJsonTree(newData)
-        )
-
-        rootLevelFile!!.objects.add(newObj)
-        val newObjectMap =
-            rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
-        parsedData = parsedData!!.copy(objectMap = newObjectMap)
-
-        val challengeModRtid = parsedData!!.levelDef?.modules?.find { modRtid ->
-            val rtidInfo = RtidParser.parse(modRtid)
-            val modAlias = rtidInfo?.alias ?: ""
-            val modObj = if (rtidInfo?.source == "CurrentLevel") {
-                parsedData!!.objectMap[modAlias]
-            } else {
-                parsedData!!.objectMap[modAlias]
-            }
-            modObj?.objClass == "StarChallengeModuleProperties"
-        }
-
-        if (challengeModRtid != null) {
-            val challengeModInfo = RtidParser.parse(challengeModRtid)
-            val challengeModObj = parsedData!!.objectMap[challengeModInfo!!.alias]
-
-            if (challengeModObj != null) {
-                val modData = try {
-                    gson.fromJson(challengeModObj.objData, StarChallengeModuleData::class.java)
-                } catch (_: Exception) { StarChallengeModuleData() }
-
-                val newChallengeRtid = RtidParser.build(alias, "CurrentLevel")
-
-                if (modData.challenges.isEmpty()) {
-                    modData.challenges.add(mutableListOf())
-                }
-                modData.challenges[0].add(newChallengeRtid)
-
-                challengeModObj.objData = gson.toJsonTree(modData)
-            }
-        }
-        refreshTrigger++
-    }
-
-    // ======================== 4. 弹窗组件 ========================
+    BackHandler(enabled = currentSubScreen == EditorSubScreen.None) { handleExit() }
 
     if (showRenameDialog) {
         AlertDialog(
@@ -505,74 +531,51 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 )
             },
-            confirmButton = { Button(onClick = ::performRename) { Text("确定") } },
+            confirmButton = { Button(onClick = { performRename() }) { Text("确定") } },
             dismissButton = { TextButton(onClick = { showRenameDialog = false }) { Text("取消") } }
         )
     }
 
-    // ======================== 5. 导航与界面渲染 ========================
-
-    fun navigateBackToMain() {
-        if (rootLevelFile != null && parsedData != null) {
-            val newObjectMap = rootLevelFile!!.objects.associateBy {
-                it.aliases?.firstOrNull() ?: "unknown"
+    androidx.compose.material3.Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = androidx.compose.material3.MaterialTheme.colorScheme.background
+    ) {
+        AnimatedContent(
+            targetState = currentSubScreen,
+            label = "Nav",
+            transitionSpec = {
+                if (targetState == EditorSubScreen.PlantSelection || targetState == EditorSubScreen.ZombieSelection
+                    || targetState == EditorSubScreen.StageSelection || targetState == EditorSubScreen.GridItemSelection
+                    || targetState == EditorSubScreen.ChallengeSelection
+                ) {
+                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> -width / 3 } + fadeOut())
+                } else if (initialState == EditorSubScreen.PlantSelection || initialState == EditorSubScreen.ZombieSelection
+                    || initialState == EditorSubScreen.StageSelection || initialState == EditorSubScreen.GridItemSelection
+                    || initialState == EditorSubScreen.ChallengeSelection
+                ) {
+                    (slideInHorizontally { width -> -width / 3 } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> width } + fadeOut())
+                } else if (targetState != EditorSubScreen.None && initialState == EditorSubScreen.None) {
+                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> -width / 3 } + fadeOut())
+                } else {
+                    (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> width } + fadeOut())
+                }
             }
-
-            val waveModObj =
-                rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
-            val newWaveModule =
-                waveModObj?.let { gson.fromJson(it.objData, WaveManagerModuleData::class.java) }
-
-            val waveMgrObj = rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
-            val newWaveManager =
-                waveMgrObj?.let { gson.fromJson(it.objData, WaveManagerData::class.java) }
-
-            parsedData = parsedData!!.copy(
-                objectMap = newObjectMap,
-                waveModule = newWaveModule,
-                waveManager = newWaveManager
-            )
-            refreshTrigger++
-        }
-        currentSubScreen = EditorSubScreen.None
-    }
-
-    AnimatedContent(
-        targetState = currentSubScreen,
-        label = "EditorNavTransition",
-        transitionSpec = {
-            if (targetState == EditorSubScreen.PlantSelection || targetState == EditorSubScreen.ZombieSelection
-                || targetState == EditorSubScreen.StageSelection || targetState == EditorSubScreen.GridItemSelection
-                || targetState == EditorSubScreen.ChallengeSelection
-            ) {
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width / 3 } + fadeOut()
-                )
-            } else if (initialState == EditorSubScreen.PlantSelection || initialState == EditorSubScreen.ZombieSelection
-                || initialState == EditorSubScreen.StageSelection || initialState == EditorSubScreen.GridItemSelection
-                || initialState == EditorSubScreen.ChallengeSelection
-            ) {
-                (slideInHorizontally { width -> -width / 3 } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
-                )
-            } else if (targetState != EditorSubScreen.None && initialState == EditorSubScreen.None) {
-                (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> -width / 3 } + fadeOut()
-                )
-            } else {
-                (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                    slideOutHorizontally { width -> width } + fadeOut()
-                )
-            }
-        }
-    ) { targetState ->
-        when (targetState) {
-            // ------ 主页面：Tab 结构 ------
-            EditorSubScreen.None -> {
+        ) { targetState ->
+            if (targetState == EditorSubScreen.None) {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text(currentFileName.substringBeforeLast("."), fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                            title = {
+                                Text(
+                                    currentFileName.substringBeforeLast("."),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
+                                )
+                            },
                             navigationIcon = {
                                 IconButton(onClick = { handleExit() }) {
                                     Icon(
@@ -593,13 +596,15 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                                     )
                                 }
                                 IconButton(onClick = { performSave(isExit = false) }) {
-                                    Icon(Icons.Default.Save, "保存", tint = Color.White)
+                                    Icon(
+                                        Icons.Default.Save,
+                                        "保存",
+                                        tint = Color.White
+                                    )
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color(
-                                    0xFF388E3C
-                                ), titleContentColor = Color.White
+                                containerColor = Color(0xFF388E3C), titleContentColor = Color.White
                             )
                         )
                     }
@@ -622,565 +627,33 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                             }
                         }
 
-                        if (parsedData != null && selectedTabIndex < availableTabs.size) {
-                            val currentTab = availableTabs[selectedTabIndex]
-
-                            when (currentTab) {
-                                EditorTabType.Settings -> key(refreshTrigger) {
-                                    LevelSettingsTab(
-                                        levelDef = parsedData!!.levelDef,
-                                        objectMap = parsedData!!.objectMap,
-                                        scrollState = getLazyState("GlobalSettingsTab"),
-                                        onEditBasicInfo = {
-                                            currentSubScreen = EditorSubScreen.BasicInfo
-                                        },
-                                        onEditModule = { rtid ->
-                                            val info = RtidParser.parse(rtid)
-                                            val alias = info?.alias ?: ""
-
-                                            val objClass = if (info?.source == "CurrentLevel")
-                                                parsedData!!.objectMap[alias]?.objClass else {
-                                                ReferenceRepository.getObjClass(alias)
-                                            } ?: "Unknown"
-
-                                            val metadata = ModuleRegistry.getMetadata(objClass)
-                                            currentSubScreen = metadata.navigationFactory(rtid)
-                                        },
-                                        missingModules = missingModules,
-                                        onRemoveModule = { rtid -> handleRemoveModule(rtid) },
-                                        onNavigateToAddModule = {
-                                            currentSubScreen = EditorSubScreen.ModuleSelection
-                                        },
-                                    )
-                                }
-
-                                EditorTabType.Timeline -> WaveTimelineTab(
-                                    rootLevelFile = rootLevelFile,
-                                    waveManager = parsedData!!.waveManager,
-                                    waveModule = parsedData!!.waveModule,
-                                    objectMap = parsedData!!.objectMap,
-                                    scrollState = getLazyState("WaveTimelineTab"),
-                                    refreshTrigger = refreshTrigger,
-                                    onEditEvent = { rtid, waveIdx ->
-                                        val alias = LevelParser.extractAlias(rtid)
-                                        val isInvalid = !parsedData!!.objectMap.containsKey(alias)
-
-                                        if (isInvalid) {
-                                            currentSubScreen =
-                                                EditorSubScreen.InvalidEvent(rtid, waveIdx)
-                                        } else {
-                                            val obj = parsedData!!.objectMap[alias]
-                                            when (obj?.objClass) {
-                                                "SpawnZombiesJitteredWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.JitteredWaveDetail(rtid, waveIdx)
-
-                                                "SpawnZombiesFromGroundSpawnerProps" -> currentSubScreen =
-                                                    EditorSubScreen.GroundWaveDetail(rtid, waveIdx)
-
-                                                "SpawnModernPortalsWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.PortalDetail(rtid, waveIdx)
-
-                                                "ModifyConveyorWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.ModifyConveyorDetail(rtid, waveIdx)
-
-                                                "StormZombieSpawnerProps" -> currentSubScreen =
-                                                    EditorSubScreen.StormDetail(rtid, waveIdx)
-
-                                                "RaidingPartyZombieSpawnerProps" -> currentSubScreen =
-                                                    EditorSubScreen.RaidingDetail(rtid, waveIdx)
-
-                                                "ParachuteRainZombieSpawnerProps" -> currentSubScreen =
-                                                    EditorSubScreen.ParachuteRainDetail(rtid, waveIdx)
-
-                                                "TidalChangeWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.TidalChangeDetail(rtid, waveIdx)
-
-                                                "BeachStageEventZombieSpawnerProps" -> currentSubScreen =
-                                                    EditorSubScreen.BeachStageEventDetail(rtid, waveIdx)
-
-                                                "BlackHoleWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.BlackHoleDetail(rtid, waveIdx)
-
-                                                "FrostWindWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.FrostWindDetail(rtid, waveIdx)
-
-                                                "DinoWaveActionProps" -> currentSubScreen =
-                                                    EditorSubScreen.DinoEventDetail(rtid, waveIdx)
-
-                                                else -> currentSubScreen =
-                                                    EditorSubScreen.UnknownDetail(rtid)
-                                            }
-                                        }
-                                    },
-                                    onNavigateToAddEvent = { waveIdx ->
-                                        currentSubScreen = EditorSubScreen.EventSelection(waveIdx)
-                                    },
-                                    onEditSettings = {
-                                        currentSubScreen = EditorSubScreen.WaveManagerSettings
-                                    },
-                                    onWavesChanged = {
-                                        if (rootLevelFile != null && parsedData != null) {
-                                            rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
-                                                ?.let {
-                                                    it.objData =
-                                                        gson.toJsonTree(parsedData!!.waveManager)
-                                                }
-                                            val newObjectMap = rootLevelFile!!.objects.associateBy {
-                                                it.aliases?.firstOrNull() ?: "unknown"
-                                            }
-                                            parsedData = parsedData!!.copy(objectMap = newObjectMap)
-                                        }
-                                        refreshTrigger++
-                                    },
-                                    onCreateContainer = {
-                                        if (rootLevelFile != null) {
-                                            val defaultData = WaveManagerData(
-                                                waves = mutableListOf(mutableListOf())
-                                            )
-                                            var newAlias = "WaveManagerProps"
-                                            var count = 0
-                                            while (rootLevelFile!!.objects.any {
-                                                    it.aliases?.contains(
-                                                        newAlias
-                                                    ) == true
-                                                }) {
-                                                count++
-                                                newAlias = "WaveManagerProps$count"
-                                            }
-                                            val newObj = PvzObject(
-                                                aliases = listOf(newAlias),
-                                                objClass = "WaveManagerProperties",
-                                                objData = gson.toJsonTree(defaultData)
-                                            )
-                                            rootLevelFile!!.objects.add(newObj)
-
-                                            parsedData?.waveModule?.let { mod ->
-                                                mod.waveManagerProps =
-                                                    RtidParser.build(newAlias, "CurrentLevel")
-                                                rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
-                                                    ?.let {
-                                                        it.objData = gson.toJsonTree(mod)
-                                                    }
-                                            }
-                                            val newObjectMap = rootLevelFile!!.objects.associateBy {
-                                                it.aliases?.firstOrNull() ?: "unknown"
-                                            }
-
-                                            parsedData = parsedData!!.copy(
-                                                objectMap = newObjectMap,
-                                                waveManager = defaultData,
-                                                waveModule = parsedData?.waveModule
-                                            )
-                                            refreshTrigger++
-                                            Toast.makeText(
-                                                context,
-                                                "已初始化波次容器 ($newAlias)",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-
-                                EditorTabType.VaseBreaker -> {
-                                    // 渲染砸罐子编辑器 (尚未实现，先放占位符)
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("砸罐子布局编辑器 (开发中)")
-                                    }
-                                }
-
-                                EditorTabType.BossFight -> {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("Boss战编辑器 (开发中)")
-                                    }
-                                }
-                            }
-                        }
+                        EditorContentRouter(
+                            targetState = EditorSubScreen.None,
+                            rootLevelFile = rootLevelFile,
+                            parsedData = parsedData,
+                            missingModules = missingModules,
+                            currentTab = availableTabs.getOrElse(selectedTabIndex) { EditorTabType.Settings },
+                            getLazyState = ::getLazyState,
+                            getScrollState = ::getScrollState,
+                            refreshTrigger = refreshTrigger,
+                            actions = actions
+                        )
                     }
                 }
-            }
-
-            // 基础信息
-            EditorSubScreen.BasicInfo -> LevelDefinitionEP(
-                levelDef = parsedData?.levelDef!!,
-                onBack = { navigateBackToMain() },
-                onNavigateToStageSelection = {
-                    currentSubScreen = EditorSubScreen.StageSelection
-                },
-                scrollState = getScrollState("BasicInfo")
-            )
-
-            // 波次全局设置
-            EditorSubScreen.WaveManagerSettings -> {
-                val hasConveyor = parsedData?.levelDef?.modules?.any { rtid ->
-                    val info = RtidParser.parse(rtid)
-                    val alias = info?.alias ?: ""
-                    val objClass = if (info?.source == "CurrentLevel") {
-                        parsedData!!.objectMap[alias]?.objClass
-                    } else {
-                        ReferenceRepository.getObjClass(alias)
-                    }
-                    objClass == "ConveyorSeedBankProperties"
-                } == true
-                WaveManagerPropertiesEP(
-                    waveManager = parsedData?.waveManager!!,
-                    hasConveyor = hasConveyor,
-                    onBack = {
-                        rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }
-                            ?.let {
-                                it.objData = gson.toJsonTree(parsedData!!.waveManager)
-                            }
-                        navigateBackToMain()
-                    },
-                    scrollState = getScrollState("WaveManagerSettings")
-                )
-            }
-
-            // 阳光掉落
-            is EditorSubScreen.SunDropper -> SunDropperPropertiesEP(
-                rootLevelFile = rootLevelFile!!,
-                levelDef = parsedData?.levelDef!!,
-                onBack = { navigateBackToMain() },
-                scrollState = getScrollState("SunDropper")
-            )
-
-            // 种子库
-            is EditorSubScreen.SeedBank -> SeedBankPropertiesEP(
-                rootLevelFile = rootLevelFile!!,
-                levelDef = parsedData?.levelDef!!,
-                onBack = { navigateBackToMain() },
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getScrollState("SeedBank")
-            )
-
-            // 传送带
-            is EditorSubScreen.ConveyorBelt -> ConveyorSeedBankPropertiesEP(
-                rootLevelFile = rootLevelFile!!,
-                levelDef = parsedData?.levelDef!!,
-                onBack = { navigateBackToMain() },
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getScrollState("ConveyorBelt")
-            )
-
-            // 预置植物
-            is EditorSubScreen.InitialPlantEntry -> InitialPlantEntryEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getScrollState("InitialPlant")
-            )
-
-            // 预置僵尸
-            is EditorSubScreen.InitialZombieEntry -> InitialZombieEntryEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                scrollState = getScrollState("InitialZombie")
-            )
-
-            // 预置障碍物
-            is EditorSubScreen.InitialGridItemEntry -> InitialGridItemEntryEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestGridItemSelection = { callback -> launchGridItemSelector(callback) },
-                scrollState = getScrollState("InitialGridItem")
-            )
-
-            // 阳光炸弹
-            is EditorSubScreen.SunBombChallenge -> SunBombChallengePropertiesEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("SunBomb")
-            )
-
-            // 挑战模块
-            is EditorSubScreen.StarChallenge -> StarChallengeModulePropertiesEP(
-                rtid = targetState.rtid,
-                rootLevelFile = rootLevelFile!!,
-                objectMap = parsedData!!.objectMap,
-                onBack = { navigateBackToMain() },
-                onNavigateToAddChallenge = {
-                    launchChallengeSelector { info ->
-                        handleAddChallenge(info)
-                        currentSubScreen = EditorSubScreen.StarChallenge(targetState.rtid)
-                    }
-                },
-                scrollState = getScrollState("StarChallenge")
-            )
-
-            // 海盗甲板
-            is EditorSubScreen.PiratePlank -> PiratePlankPropertiesEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                levelDef = parsedData?.levelDef!!,
-                scrollState = getScrollState("PiratePlank")
-            )
-
-            // 潮水模块
-            is EditorSubScreen.Tide -> TidePropertiesEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("Tide")
-            )
-
-            // 矿车模块
-            is EditorSubScreen.Railcart -> RailcartPropertiesEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("Railcart")
-            )
-
-            is EditorSubScreen.PowerTile -> PowerTilePropertiesEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("PowerTile")
-            )
-
-            // 波次管理器
-            is EditorSubScreen.WaveManagerModule -> WaveManagerModulePropertiesEP(
-                rootLevelFile = rootLevelFile!!,
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                scrollState = getScrollState("WaveManagerModule")
-            )
-
-            // 通用模块详情
-            is EditorSubScreen.UnknownDetail -> UnknownEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                scrollState = getScrollState("UnknownDetail")
-            )
-
-            // 僵尸波次详情
-            is EditorSubScreen.JitteredWaveDetail -> SpawnZombiesJitteredWaveActionPropsEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getLazyState(targetState.rtid)
-            )
-
-            // 地下出怪详情
-            is EditorSubScreen.GroundWaveDetail -> SpawnZombiesFromGroundEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getLazyState(targetState.rtid)
-            )
-
-            // 传送带变更详情
-            is EditorSubScreen.ModifyConveyorDetail -> ModifyConveyorEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestPlantSelection = { callback -> launchPlantSelector(callback) },
-                scrollState = getScrollState("ModifyConveyorDetail")
-            )
-
-            // 传送门详情
-            is EditorSubScreen.PortalDetail -> SpawnModernPortalsWaveActionPropsEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("PortalDetail")
-            )
-
-            // 风暴详情
-            is EditorSubScreen.StormDetail -> StormZombieSpawnerPropsEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                scrollState = getScrollState("StormDetail")
-            )
-
-            // 海盗登船详情
-            is EditorSubScreen.RaidingDetail -> RaidingPartyEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("RaidingDetail")
-            )
-
-            // 空袭详情
-            is EditorSubScreen.ParachuteRainDetail -> ParachuteRainEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getLazyState(targetState.rtid)
-            )
-
-            // 退潮突袭详情
-            is EditorSubScreen.BeachStageEventDetail -> BeachStageEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                onRequestZombieSelection = { callback -> launchZombieSelector(callback) },
-                scrollState = getLazyState(targetState.rtid)
-            )
-
-            // 潮水变更详情
-            is EditorSubScreen.TidalChangeDetail -> TidalChangeEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("TidalChangeDetail")
-            )
-
-            // 黑洞事件详情
-            is EditorSubScreen.BlackHoleDetail -> BlackHoleEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("BlackHoleDetail")
-            )
-
-            // 寒风事件详情
-            is EditorSubScreen.FrostWindDetail -> FrostWindEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("FrostWindDetail")
-            )
-
-            // 恐龙事件详情
-            is EditorSubScreen.DinoEventDetail -> DinoEventEP(
-                rtid = targetState.rtid,
-                onBack = { navigateBackToMain() },
-                rootLevelFile = rootLevelFile!!,
-                scrollState = getScrollState("DinoEventDetail")
-            )
-
-            is EditorSubScreen.InvalidEvent -> InvalidEventEP(
-                rtid = targetState.rtid,
-                waveIndex = targetState.waveIndex,
-                onDeleteReference = { rtid ->
-                    // 删除该引用的逻辑
-                    parsedData?.waveManager?.waves?.forEach { wave ->
-                        wave.removeAll { it == rtid }
-                    }
-                    // 同步并刷新
-                    rootLevelFile?.objects?.find { it.objClass == "WaveManagerProperties" }?.let {
-                        it.objData = gson.toJsonTree(parsedData!!.waveManager)
-                    }
-                    refreshTrigger++
-                    currentSubScreen = EditorSubScreen.None
-                },
-                onBack = { currentSubScreen = EditorSubScreen.None },
-                scrollState = getScrollState("InvalidEvent")
-            )
-
-            is EditorSubScreen.EventSelection -> EventSelectionScreen(
-                waveIndex = targetState.waveIndex,
-                onEventSelected = { meta -> handleAddEvent(meta, targetState.waveIndex) },
-                onBack = { currentSubScreen = EditorSubScreen.None }
-            )
-
-            EditorSubScreen.PlantSelection -> {
-                PlantSelectionScreen(
-                    onPlantSelected = { plantId ->
-                        plantSelectionCallback?.invoke(plantId)
-                        currentSubScreen = previousSubScreen
-                        refreshTrigger++ // 这里的刷新依然保留
-                        plantSelectionCallback = null
-                    },
-                    onBack = {
-                        currentSubScreen = previousSubScreen
-                        plantSelectionCallback = null
-                    }
-                )
-            }
-
-            EditorSubScreen.ZombieSelection -> {
-                ZombieSelectionScreen(
-                    onZombieSelected = { zombieId ->
-                        zombieSelectionCallback?.invoke(zombieId)
-                        currentSubScreen = previousSubScreen
-                        refreshTrigger++
-                        zombieSelectionCallback = null
-                    },
-                    onBack = {
-                        currentSubScreen = previousSubScreen
-                        zombieSelectionCallback = null
-                    }
-                )
-            }
-
-            EditorSubScreen.GridItemSelection -> {
-                GridItemSelectionScreen(
-                    onGridItemSelected = { gridItemId ->
-                        gridItemSelectionCallback?.invoke(gridItemId)
-                        currentSubScreen = previousSubScreen
-                        refreshTrigger++
-                        gridItemSelectionCallback = null
-                    },
-                    onBack = {
-                        currentSubScreen = previousSubScreen
-                        gridItemSelectionCallback = null
-                    }
-                )
-            }
-
-            EditorSubScreen.ModuleSelection -> {
-                val existingClasses = parsedData?.levelDef?.modules?.map { rtid ->
-                    val info = RtidParser.parse(rtid)
-                    if (info?.source == "CurrentLevel") {
-                        parsedData!!.objectMap[info.alias]?.objClass
-                    } else {
-                        ReferenceRepository.getObjClass(info?.alias ?: "")
-                    } ?: ""
-                }?.toSet() ?: emptySet()
-
-                ModuleSelectionScreen(
-                    existingObjClasses = existingClasses,
-                    onModuleSelected = { meta ->
-                        handleAddModule(meta)
-                        currentSubScreen = EditorSubScreen.None
-                        refreshTrigger++
-                    },
-                    onBack = { currentSubScreen = EditorSubScreen.None }
-                )
-            }
-
-            EditorSubScreen.StageSelection -> {
-                StageSelectionScreen(
-                    onStageSelected = { newRtid ->
-                        parsedData?.levelDef?.stageModule = newRtid
-                        currentSubScreen = EditorSubScreen.BasicInfo
-                        refreshTrigger++
-                    },
-                    onBack = { currentSubScreen = EditorSubScreen.BasicInfo }
-                )
-            }
-
-            EditorSubScreen.ChallengeSelection -> {
-                ChallengeSelectionScreen(
-                    onChallengeSelected = { info ->
-                        challengeSelectionCallback?.invoke(info)
-                        challengeSelectionCallback = null
-                    },
-                    onBack = {
-                        currentSubScreen = previousSubScreen
-                        challengeSelectionCallback = null
-                    }
-                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    EditorContentRouter(
+                        targetState = targetState,
+                        rootLevelFile = rootLevelFile,
+                        parsedData = parsedData,
+                        missingModules = missingModules,
+                        currentTab = availableTabs.getOrElse(selectedTabIndex) { EditorTabType.Settings },
+                        getLazyState = ::getLazyState,
+                        getScrollState = ::getScrollState,
+                        refreshTrigger = refreshTrigger,
+                        actions = actions
+                    )
+                }
             }
         }
     }

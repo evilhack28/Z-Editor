@@ -81,8 +81,8 @@ import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -132,7 +132,7 @@ fun InitialZombieEntryEP(
     }
 
     val sortedPlacements = remember(moduleDataState.value.placements) {
-        moduleDataState.value.placements.sortedWith(compareBy({ it.gridX }, { it.gridY }))
+        moduleDataState.value.placements.sortedWith(compareBy({ it.gridY }, { it.gridX }))
     }
 
     fun handleAddZombie() {
@@ -437,7 +437,7 @@ fun InitialZombieEntryEP(
                                                             Color(0xFF81D4FA)
                                                         )
                                                         .background(
-                                                            if (isSelected) Color(0xFFFFEB3B).copy(
+                                                            if (isSelected) Color(0xFFEBF13E).copy(
                                                                 alpha = 0.5f
                                                             )
                                                             else Color.Transparent
@@ -505,7 +505,7 @@ fun InitialZombieEntryEP(
             // === 区域 2: 标题 (跨满全宽) ===
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    "僵尸分布列表 (列优先排序)",
+                    "僵尸分布列表 (行优先排序)",
                     modifier = Modifier.padding(vertical = 8.dp),
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray,

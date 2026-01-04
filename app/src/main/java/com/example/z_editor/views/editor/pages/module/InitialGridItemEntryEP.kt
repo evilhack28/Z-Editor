@@ -63,8 +63,8 @@ import com.example.z_editor.data.InitialGridItemData
 import com.example.z_editor.data.InitialGridItemEntryData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
-import com.example.z_editor.views.editor.EditorHelpDialog
-import com.example.z_editor.views.editor.HelpSection
+import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
+import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.screens.GridItemRepository
 import com.google.gson.Gson
 
@@ -109,7 +109,7 @@ fun InitialGridItemEntryEP(
     }
 
     val sortedItems = remember(moduleDataState.value.placements) {
-        moduleDataState.value.placements.sortedWith(compareBy({ it.gridX }, { it.gridY }))
+        moduleDataState.value.placements.sortedWith(compareBy({ it.gridY }, { it.gridX }))
     }
 
     fun handleSelectItem() {
@@ -275,7 +275,7 @@ fun InitialGridItemEntryEP(
                                                         .fillMaxHeight()
                                                         .border(0.5.dp, Color(0xFF8D6E63))
                                                         .background(
-                                                            if (isSelected) Color(0xFFFFEB3B).copy(
+                                                            if (isSelected) Color(0xFFEBF13E).copy(
                                                                 alpha = 0.5f
                                                             ) else Color.Transparent
                                                         )
@@ -290,7 +290,7 @@ fun InitialGridItemEntryEP(
                                                             modifier = Modifier
                                                                 .fillMaxSize(0.9f)
                                                                 .background(
-                                                                    Color(0xFF5D4037),
+                                                                    Color(0xFF7A5549),
                                                                     RoundedCornerShape(4.dp)
                                                                 ),
                                                             contentAlignment = Alignment.Center
@@ -319,7 +319,7 @@ fun InitialGridItemEntryEP(
             // === 区域 2: 标题 (作为列表头，跨满全宽) ===
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
-                    "物品分布列表 (列优先排序)",
+                    "物品分布列表 (行优先排序)",
                     modifier = Modifier.padding(vertical = 8.dp),
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray,

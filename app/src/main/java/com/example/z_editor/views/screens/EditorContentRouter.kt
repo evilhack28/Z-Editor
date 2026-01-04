@@ -1,0 +1,509 @@
+package com.example.z_editor.views.screens
+
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import com.example.z_editor.data.EditorSubScreen
+import com.example.z_editor.data.LevelParser
+import com.example.z_editor.data.ModuleMetadata
+import com.example.z_editor.data.ModuleRegistry
+import com.example.z_editor.data.ParsedLevelData
+import com.example.z_editor.data.PvzLevelFile
+import com.example.z_editor.data.RtidParser
+import com.example.z_editor.data.repository.ReferenceRepository
+import com.example.z_editor.views.editor.pages.event.BeachStageEventEP
+import com.example.z_editor.views.editor.pages.event.BlackHoleEventEP
+import com.example.z_editor.views.editor.pages.event.DinoEventEP
+import com.example.z_editor.views.editor.pages.event.FrostWindEventEP
+import com.example.z_editor.views.editor.pages.event.InvalidEventEP
+import com.example.z_editor.views.editor.pages.event.ModifyConveyorEventEP
+import com.example.z_editor.views.editor.pages.event.ParachuteRainEventEP
+import com.example.z_editor.views.editor.pages.event.RaidingPartyEventEP
+import com.example.z_editor.views.editor.pages.event.SpawnModernPortalsWaveActionPropsEP
+import com.example.z_editor.views.editor.pages.event.SpawnZombiesFromGroundEventEP
+import com.example.z_editor.views.editor.pages.event.SpawnZombiesJitteredWaveActionPropsEP
+import com.example.z_editor.views.editor.pages.event.StormZombieSpawnerPropsEP
+import com.example.z_editor.views.editor.pages.event.TidalChangeEventEP
+import com.example.z_editor.views.editor.pages.module.ConveyorSeedBankPropertiesEP
+import com.example.z_editor.views.editor.pages.module.InitialGridItemEntryEP
+import com.example.z_editor.views.editor.pages.module.InitialPlantEntryEP
+import com.example.z_editor.views.editor.pages.module.InitialZombieEntryEP
+import com.example.z_editor.views.editor.pages.module.LastStandMinigamePropertiesEP
+import com.example.z_editor.views.editor.pages.module.PiratePlankPropertiesEP
+import com.example.z_editor.views.editor.pages.module.PowerTilePropertiesEP
+import com.example.z_editor.views.editor.pages.module.RailcartPropertiesEP
+import com.example.z_editor.views.editor.pages.module.SeedBankPropertiesEP
+import com.example.z_editor.views.editor.pages.module.StarChallengeModulePropertiesEP
+import com.example.z_editor.views.editor.pages.module.SunBombChallengePropertiesEP
+import com.example.z_editor.views.editor.pages.module.SunDropperPropertiesEP
+import com.example.z_editor.views.editor.pages.module.TidePropertiesEP
+import com.example.z_editor.views.editor.pages.module.WaveManagerModulePropertiesEP
+import com.example.z_editor.views.editor.pages.others.LevelDefinitionEP
+import com.example.z_editor.views.editor.pages.others.UnknownEP
+import com.example.z_editor.views.editor.pages.others.WaveManagerPropertiesEP
+import com.example.z_editor.views.editor.tabs.IZombieTab
+import com.example.z_editor.views.editor.tabs.LevelSettingsTab
+import com.example.z_editor.views.editor.tabs.VaseBreakerTab
+import com.example.z_editor.views.editor.tabs.WaveTimelineTab
+
+/**
+ * 路由分发器：只负责根据 targetState 渲染对应的页面
+ */
+@Composable
+fun EditorContentRouter(
+    targetState: EditorSubScreen,
+    rootLevelFile: PvzLevelFile?,
+    parsedData: ParsedLevelData?,
+    missingModules: List<ModuleMetadata>,
+    currentTab: EditorTabType,
+    getLazyState: (String) -> LazyListState,
+    getScrollState: (String) -> ScrollState,
+    refreshTrigger: Int,
+    actions: EditorActions
+) {
+    if (parsedData == null || rootLevelFile == null) return
+
+    when (targetState) {
+        // ======================== 主页面：Tab 结构 ========================
+        EditorSubScreen.None -> {
+            when (currentTab) {
+                EditorTabType.Settings -> {
+                    key(refreshTrigger) {
+                        LevelSettingsTab(
+                            levelDef = parsedData.levelDef,
+                            objectMap = parsedData.objectMap,
+                            scrollState = getLazyState("GlobalSettingsTab"),
+                            onEditBasicInfo = { actions.navigateTo(EditorSubScreen.BasicInfo) },
+                            onEditModule = { rtid ->
+                                val info = RtidParser.parse(rtid)
+                                val alias = info?.alias ?: ""
+                                val objClass = if (info?.source == "CurrentLevel")
+                                    parsedData.objectMap[alias]?.objClass else {
+                                    ReferenceRepository.getObjClass(alias)
+                                } ?: "Unknown"
+                                val metadata = ModuleRegistry.getMetadata(objClass)
+                                actions.navigateTo(metadata.navigationFactory(rtid))
+                            },
+                            missingModules = missingModules,
+                            onRemoveModule = actions.onRemoveModule,
+                            onNavigateToAddModule = { actions.navigateTo(EditorSubScreen.ModuleSelection) },
+                        )
+                    }
+                }
+
+                EditorTabType.Timeline -> {
+                    WaveTimelineTab(
+                        rootLevelFile = rootLevelFile,
+                        waveManager = parsedData.waveManager,
+                        waveModule = parsedData.waveModule,
+                        objectMap = parsedData.objectMap,
+                        scrollState = getLazyState("WaveTimelineTab"),
+                        refreshTrigger = refreshTrigger,
+                        onEditEvent = { rtid, waveIdx ->
+                            val alias = LevelParser.extractAlias(rtid)
+                            val isInvalid = !parsedData.objectMap.containsKey(alias)
+                            if (isInvalid) {
+                                actions.navigateTo(EditorSubScreen.InvalidEvent(rtid, waveIdx))
+                            } else {
+                                val obj = parsedData.objectMap[alias]
+                                val nextScreen = when (obj?.objClass) {
+                                    "SpawnZombiesJitteredWaveActionProps" -> EditorSubScreen.JitteredWaveDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "SpawnZombiesFromGroundSpawnerProps" -> EditorSubScreen.GroundWaveDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "SpawnModernPortalsWaveActionProps" -> EditorSubScreen.PortalDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "ModifyConveyorWaveActionProps" -> EditorSubScreen.ModifyConveyorDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "StormZombieSpawnerProps" -> EditorSubScreen.StormDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "RaidingPartyZombieSpawnerProps" -> EditorSubScreen.RaidingDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "ParachuteRainZombieSpawnerProps" -> EditorSubScreen.ParachuteRainDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "TidalChangeWaveActionProps" -> EditorSubScreen.TidalChangeDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "BeachStageEventZombieSpawnerProps" -> EditorSubScreen.BeachStageEventDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "BlackHoleWaveActionProps" -> EditorSubScreen.BlackHoleDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "FrostWindWaveActionProps" -> EditorSubScreen.FrostWindDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    "DinoWaveActionProps" -> EditorSubScreen.DinoEventDetail(
+                                        rtid,
+                                        waveIdx
+                                    )
+
+                                    else -> EditorSubScreen.UnknownDetail(rtid)
+                                }
+                                actions.navigateTo(nextScreen)
+                            }
+                        },
+                        onNavigateToAddEvent = { waveIdx ->
+                            actions.navigateTo(
+                                EditorSubScreen.EventSelection(
+                                    waveIdx
+                                )
+                            )
+                        },
+                        onEditSettings = { actions.navigateTo(EditorSubScreen.WaveManagerSettings) },
+                        onWavesChanged = actions.onWavesChanged,
+                        onCreateContainer = actions.onCreateWaveContainer
+                    )
+                }
+
+                EditorTabType.VaseBreaker -> {
+                    VaseBreakerTab(
+                        rootLevelFile = rootLevelFile,
+                        objectMap = parsedData.objectMap,
+                        onRequestPlantSelection = actions.onLaunchPlantSelector,
+                        onRequestZombieSelection = actions.onLaunchZombieSelector,
+                        scrollState = getLazyState("VaseBreakerTab"),
+                        refreshTrigger = refreshTrigger
+                    )
+                }
+
+                EditorTabType.IZombie -> {
+                    IZombieTab(
+                        rootLevelFile = rootLevelFile,
+                        parsedData = parsedData
+                    )
+                }
+
+                EditorTabType.BossFight -> {
+                    // Boss战编辑器占位
+                }
+            }
+        }
+
+        // ======================== 具体子页面：模块 ========================
+
+        EditorSubScreen.BasicInfo -> LevelDefinitionEP(
+            levelDef = parsedData.levelDef!!,
+            onBack = actions.navigateBack,
+            onNavigateToStageSelection = { actions.navigateTo(EditorSubScreen.StageSelection) },
+            scrollState = getScrollState("BasicInfo")
+        )
+
+        EditorSubScreen.WaveManagerSettings -> {
+            val hasConveyor = parsedData.levelDef?.modules?.any { rtid ->
+                val info = RtidParser.parse(rtid)
+                val alias = info?.alias ?: ""
+                val objClass =
+                    if (info?.source == "CurrentLevel") parsedData.objectMap[alias]?.objClass
+                    else ReferenceRepository.getObjClass(alias)
+                objClass == "ConveyorSeedBankProperties"
+            } == true
+            WaveManagerPropertiesEP(
+                waveManager = parsedData.waveManager!!,
+                hasConveyor = hasConveyor,
+                onBack = {
+                    actions.onSaveWaveManager()
+                    actions.navigateBack()
+                },
+                scrollState = getScrollState("WaveManagerSettings")
+            )
+        }
+
+        is EditorSubScreen.LastStandMinigame -> LastStandMinigamePropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("LastStandMinigame")
+        )
+
+        is EditorSubScreen.SunDropper -> SunDropperPropertiesEP(
+            rootLevelFile = rootLevelFile,
+            levelDef = parsedData.levelDef!!,
+            onBack = actions.navigateBack,
+            scrollState = getScrollState("SunDropper")
+        )
+
+        is EditorSubScreen.SeedBank -> SeedBankPropertiesEP(
+            rootLevelFile = rootLevelFile,
+            levelDef = parsedData.levelDef!!,
+            onBack = actions.navigateBack,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            scrollState = getScrollState("SeedBank")
+        )
+
+        is EditorSubScreen.ConveyorBelt -> ConveyorSeedBankPropertiesEP(
+            rootLevelFile = rootLevelFile,
+            levelDef = parsedData.levelDef!!,
+            onBack = actions.navigateBack,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            scrollState = getScrollState("ConveyorBelt")
+        )
+
+        is EditorSubScreen.InitialPlantEntry -> InitialPlantEntryEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            scrollState = getScrollState("InitialPlant")
+        )
+
+        is EditorSubScreen.InitialZombieEntry -> InitialZombieEntryEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            scrollState = getScrollState("InitialZombie")
+        )
+
+        is EditorSubScreen.InitialGridItemEntry -> InitialGridItemEntryEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestGridItemSelection = actions.onLaunchGridItemSelector,
+            scrollState = getScrollState("InitialGridItem")
+        )
+
+        is EditorSubScreen.SunBombChallenge -> SunBombChallengePropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("SunBomb")
+        )
+
+        is EditorSubScreen.StarChallenge -> StarChallengeModulePropertiesEP(
+            rtid = targetState.rtid,
+            rootLevelFile = rootLevelFile,
+            objectMap = parsedData.objectMap,
+            onBack = actions.navigateBack,
+            onNavigateToAddChallenge = {
+                actions.onLaunchChallengeSelector { info ->
+                    actions.onAddChallenge(info)
+                    actions.navigateTo(EditorSubScreen.StarChallenge(targetState.rtid))
+                }
+            },
+            scrollState = getScrollState("StarChallenge")
+        )
+
+        is EditorSubScreen.PiratePlank -> PiratePlankPropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            levelDef = parsedData.levelDef!!,
+            scrollState = getScrollState("PiratePlank")
+        )
+
+        is EditorSubScreen.Tide -> TidePropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("Tide")
+        )
+
+        is EditorSubScreen.Railcart -> RailcartPropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("Railcart")
+        )
+
+        is EditorSubScreen.PowerTile -> PowerTilePropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("PowerTile")
+        )
+
+        is EditorSubScreen.WaveManagerModule -> WaveManagerModulePropertiesEP(
+            rootLevelFile = rootLevelFile,
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            scrollState = getScrollState("WaveManagerModule")
+        )
+
+        is EditorSubScreen.UnknownDetail -> UnknownEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            scrollState = getScrollState("UnknownDetail")
+        )
+
+        // ======================== 具体子页面：事件详情 ========================
+
+        is EditorSubScreen.JitteredWaveDetail -> SpawnZombiesJitteredWaveActionPropsEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            scrollState = getLazyState(targetState.rtid)
+        )
+
+        is EditorSubScreen.GroundWaveDetail -> SpawnZombiesFromGroundEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            scrollState = getLazyState(targetState.rtid)
+        )
+
+        is EditorSubScreen.ModifyConveyorDetail -> ModifyConveyorEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestPlantSelection = actions.onLaunchPlantSelector,
+            scrollState = getScrollState("ModifyConveyorDetail")
+        )
+
+        is EditorSubScreen.PortalDetail -> SpawnModernPortalsWaveActionPropsEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("PortalDetail")
+        )
+
+        is EditorSubScreen.StormDetail -> StormZombieSpawnerPropsEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            scrollState = getScrollState("StormDetail")
+        )
+
+        is EditorSubScreen.RaidingDetail -> RaidingPartyEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("RaidingDetail")
+        )
+
+        is EditorSubScreen.ParachuteRainDetail -> ParachuteRainEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getLazyState(targetState.rtid)
+        )
+
+        is EditorSubScreen.BeachStageEventDetail -> BeachStageEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            onRequestZombieSelection = actions.onLaunchZombieSelector,
+            scrollState = getLazyState(targetState.rtid)
+        )
+
+        is EditorSubScreen.TidalChangeDetail -> TidalChangeEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("TidalChangeDetail")
+        )
+
+        is EditorSubScreen.BlackHoleDetail -> BlackHoleEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("BlackHoleDetail")
+        )
+
+        is EditorSubScreen.FrostWindDetail -> FrostWindEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("FrostWindDetail")
+        )
+
+        is EditorSubScreen.DinoEventDetail -> DinoEventEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile,
+            scrollState = getScrollState("DinoEventDetail")
+        )
+
+        is EditorSubScreen.InvalidEvent -> InvalidEventEP(
+            rtid = targetState.rtid,
+            waveIndex = targetState.waveIndex,
+            onDeleteReference = { rtid -> actions.onDeleteEventReference(rtid) },
+            onBack = actions.navigateBack,
+            scrollState = getScrollState("InvalidEvent")
+        )
+
+        // ======================== 选择器与导航 ========================
+
+        is EditorSubScreen.EventSelection -> EventSelectionScreen(
+            waveIndex = targetState.waveIndex,
+            onEventSelected = { meta -> actions.onAddEvent(meta, targetState.waveIndex) },
+            onBack = actions.navigateBack
+        )
+
+        EditorSubScreen.PlantSelection -> PlantSelectionScreen(
+            onPlantSelected = { id -> actions.onSelectorResult(id) },
+            onBack = actions.onSelectorCancel
+        )
+
+        EditorSubScreen.ZombieSelection -> ZombieSelectionScreen(
+            onZombieSelected = { id -> actions.onSelectorResult(id) },
+            onBack = actions.onSelectorCancel
+        )
+
+        EditorSubScreen.GridItemSelection -> GridItemSelectionScreen(
+            onGridItemSelected = { id -> actions.onSelectorResult(id) },
+            onBack = actions.onSelectorCancel
+        )
+
+        EditorSubScreen.ModuleSelection -> {
+            val existingClasses = parsedData.levelDef?.modules?.mapNotNull { rtid ->
+                val info = RtidParser.parse(rtid)
+                if (info?.source == "CurrentLevel") parsedData.objectMap[info.alias]?.objClass
+                else ReferenceRepository.getObjClass(info?.alias ?: "")
+            }?.toSet() ?: emptySet()
+
+            ModuleSelectionScreen(
+                existingObjClasses = existingClasses,
+                onModuleSelected = { meta -> actions.onAddModule(meta) },
+                onBack = actions.navigateBack
+            )
+        }
+
+        EditorSubScreen.StageSelection -> StageSelectionScreen(
+            onStageSelected = actions.onStageSelected,
+            onBack = actions.navigateBack
+        )
+
+        EditorSubScreen.ChallengeSelection -> ChallengeSelectionScreen(
+            onChallengeSelected = { info -> actions.onChallengeSelected(info) },
+            onBack = actions.onSelectorCancel
+        )
+    }
+}
