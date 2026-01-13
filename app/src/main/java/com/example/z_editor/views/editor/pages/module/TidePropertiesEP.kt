@@ -53,9 +53,7 @@ import com.example.z_editor.data.TidePropertiesData
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,30 +69,15 @@ fun TidePropertiesEP(
 
     val themeColor = Color(0xFF00ACC1)
 
-    // 数据状态
-    val dataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, TidePropertiesData::class.java)
-            } else {
-                TidePropertiesData()
-            }
-        } catch (_: Exception) {
-            TidePropertiesData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, TidePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
-    // 同步函数
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(dataState.value)
-        }
+        syncManager.sync()
     }
 
-    val startingLocation = dataState.value.startingWaveLocation
+    val startingLocation = moduleDataState.value.startingWaveLocation
     val isCellInWater: (Int) -> Boolean = remember(startingLocation) {
         { col: Int ->
             val waterStartCol = 9 - startingLocation
@@ -170,9 +153,10 @@ fun TidePropertiesEP(
                     Spacer(Modifier.height(16.dp))
 
                     NumberInputInt(
-                        value = dataState.value.startingWaveLocation,
+                        value = moduleDataState.value.startingWaveLocation,
                         onValueChange = {
-                            dataState.value = dataState.value.copy(startingWaveLocation = it)
+                            moduleDataState.value =
+                                moduleDataState.value.copy(startingWaveLocation = it)
                             sync()
                         },
                         color = themeColor,

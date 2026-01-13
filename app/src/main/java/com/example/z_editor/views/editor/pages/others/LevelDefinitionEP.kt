@@ -50,12 +50,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.LevelDefinitionData
+import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LevelDefinitionEP(
-    levelDef: LevelDefinitionData,
+    rootLevelFile: PvzLevelFile,
     onBack: () -> Unit,
     onNavigateToStageSelection: () -> Unit,
     scrollState: ScrollState
@@ -63,42 +65,48 @@ fun LevelDefinitionEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // --- 状态绑定 ---
-    var name by remember { mutableStateOf(levelDef.name) }
-    var description by remember { mutableStateOf(levelDef.description) }
-    var levelNumber by remember { mutableStateOf(levelDef.levelNumber.toString()) }
+    val obj = remember(rootLevelFile) {
+        rootLevelFile.objects.find { it.objClass == "LevelDefinition" }
+    }
+    val syncManager = rememberJsonSync(obj, LevelDefinitionData::class.java)
+    var levelDef by syncManager.dataState
 
-    var startingSunInput by remember { mutableStateOf(levelDef.startingSun?.toString() ?: "") }
+    fun sync() {
+        syncManager.sync()
+    }
+
+    var levelNumberInput by remember(levelDef.levelNumber) {
+        mutableStateOf(levelDef.levelNumber?.toString() ?: "")
+    }
+
+    var startingSunInput by remember(levelDef.startingSun) {
+        mutableStateOf(levelDef.startingSun?.toString() ?: "")
+    }
 
     var victoryExpanded by remember { mutableStateOf(false) }
-    var currentVictoryRtid by remember { mutableStateOf(levelDef.victoryModule) }
     val victoryOptions = listOf(
         "RTID(VictoryOutro@LevelModules)" to "默认胜利 (VictoryOutro)",
         "RTID(ZombossVictoryOutro@LevelModules)" to "僵王战胜利 (ZombossVictoryOutro)"
     )
     val currentVictoryLabel =
-        victoryOptions.find { it.first == currentVictoryRtid }?.second ?: levelDef.victoryModule
+        victoryOptions.find { it.first == levelDef.victoryModule }?.second ?: levelDef.victoryModule
 
     var lootExpanded by remember { mutableStateOf(false) }
-    var currentLootRtid by remember { mutableStateOf(levelDef.loot) }
     val lootOptions = listOf(
         "RTID(DefaultLoot@LevelModules)" to "默认掉落 (DefaultLoot)",
         "RTID(NoLoot@LevelModules)" to "无掉落 (NoLoot)"
     )
     val currentLootLabel =
-        lootOptions.find { it.first == currentLootRtid}?.second ?: levelDef.loot
+        lootOptions.find { it.first == levelDef.loot }?.second ?: levelDef.loot
 
     var musicTypeExpanded by remember { mutableStateOf(false) }
-    var currentMusicType by remember { mutableStateOf(levelDef.musicType) }
     val musicTypeOptions = listOf(
         "" to "默认",
         "MiniGame_A" to "小游戏 A (MiniGame_A)",
         "MiniGame_B" to "小游戏 B (MiniGame_B)"
     )
-    val currentMusicTypeLabel = musicTypeOptions.find { it.first == currentMusicType }?.second ?: currentMusicType.ifEmpty { "默认" }
-
-    var disablePeavine by remember { mutableStateOf(levelDef.disablePeavine == true) }
-    var isArtifactDisabled by remember { mutableStateOf(levelDef.isArtifactDisabled == true) }
+    val currentMusicTypeLabel = musicTypeOptions.find { it.first == levelDef.musicType }?.second
+        ?: levelDef.musicType.ifEmpty { "默认" }
 
     val currentStageInfo = remember(levelDef.stageModule) {
         RtidParser.parse(levelDef.stageModule)
@@ -133,7 +141,7 @@ fun LevelDefinitionEP(
             EditorHelpDialog(
                 title = "关卡定义基础说明",
                 onDismiss = { showHelpDialog = false },
-                themeColor = Color(0xFF388E3C) // 使用与TopBar一致的主题色
+                themeColor = Color(0xFF388E3C)
             ) {
                 HelpSection(
                     title = "简要介绍",
@@ -169,10 +177,10 @@ fun LevelDefinitionEP(
             )
 
             OutlinedTextField(
-                value = name,
+                value = levelDef.name,
                 onValueChange = {
-                    name = it
-                    levelDef.name = it
+                    levelDef = levelDef.copy(name = it)
+                    sync()
                 },
                 label = { Text("关卡名称 (Name)") },
                 modifier = Modifier.fillMaxWidth(),
@@ -181,10 +189,12 @@ fun LevelDefinitionEP(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = levelNumber,
+                    value = levelNumberInput,
                     onValueChange = {
-                        levelNumber = it
-                        levelDef.levelNumber = it.toIntOrNull() ?: levelDef.levelNumber
+                        levelNumberInput = it
+                        val num = it.toIntOrNull()
+                        levelDef = levelDef.copy(levelNumber = num)
+                        sync()
                     },
                     label = { Text("关卡序号") },
                     modifier = Modifier.weight(1f),
@@ -196,7 +206,8 @@ fun LevelDefinitionEP(
                     onValueChange = {
                         startingSunInput = it
                         val sunVal = it.toIntOrNull()
-                        levelDef.startingSun = sunVal
+                        levelDef = levelDef.copy(startingSun = sunVal)
+                        sync()
                     },
                     label = { Text("初始阳光") },
                     modifier = Modifier.weight(1f),
@@ -205,10 +216,10 @@ fun LevelDefinitionEP(
             }
 
             OutlinedTextField(
-                value = description,
+                value = levelDef.description,
                 onValueChange = {
-                    description = it
-                    levelDef.description = it
+                    levelDef = levelDef.copy(description = it)
+                    sync()
                 },
                 label = { Text("关卡描述 (Description)") },
                 modifier = Modifier.fillMaxWidth(),
@@ -262,9 +273,7 @@ fun LevelDefinitionEP(
                         focusedBorderColor = Color(0xFF388E3C),
                         focusedLabelColor = Color(0xFF388E3C)
                     ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 ExposedDropdownMenu(
                     expanded = musicTypeExpanded,
@@ -274,8 +283,8 @@ fun LevelDefinitionEP(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                levelDef.musicType = value
-                                currentMusicType = value
+                                levelDef = levelDef.copy(musicType = value)
+                                sync()
                                 musicTypeExpanded = false
                             }
                         )
@@ -298,9 +307,7 @@ fun LevelDefinitionEP(
                         focusedBorderColor = Color(0xFF388E3C),
                         focusedLabelColor = Color(0xFF388E3C)
                     ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 ExposedDropdownMenu(
                     expanded = lootExpanded,
@@ -310,8 +317,8 @@ fun LevelDefinitionEP(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                levelDef.loot = rtid
-                                currentLootRtid = rtid
+                                levelDef = levelDef.copy(loot = rtid)
+                                sync()
                                 lootExpanded = false
                             }
                         )
@@ -334,9 +341,7 @@ fun LevelDefinitionEP(
                         focusedBorderColor = Color(0xFF388E3C),
                         focusedLabelColor = Color(0xFF388E3C)
                     ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 ExposedDropdownMenu(
                     expanded = victoryExpanded,
@@ -346,8 +351,8 @@ fun LevelDefinitionEP(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                levelDef.victoryModule = rtid
-                                currentVictoryRtid = rtid
+                                levelDef = levelDef.copy(victoryModule = rtid)
+                                sync()
                                 victoryExpanded = false
                             }
                         )
@@ -356,7 +361,7 @@ fun LevelDefinitionEP(
             }
 
             Text(
-                "在庭院模式下，使用默认结算方式以外的结算方式可能会因为模块冲突导致关卡闪退或无法结算，请谨慎使用",
+                "使用默认结算方式以外的结算方式可能会因为模块冲突导致关卡闪退，请谨慎使用",
                 fontSize = 12.sp,
                 color = Color.Gray
             )
@@ -373,20 +378,20 @@ fun LevelDefinitionEP(
             SwitchOptionItem(
                 title = "禁用豆藤共生 (DisablePeavine)",
                 subtitle = "开启后，无法在本关卡使用豆藤共生",
-                checked = disablePeavine,
+                checked = levelDef.disablePeavine == true,
                 onCheckedChange = {
-                    disablePeavine = it
-                    levelDef.disablePeavine = if (it) true else null
+                    levelDef = levelDef.copy(disablePeavine = if (it) true else null)
+                    sync()
                 }
             )
 
             SwitchOptionItem(
                 title = "禁用神器 (IsArtifactDisabled)",
                 subtitle = "开启后，本关卡无法携带神器",
-                checked = isArtifactDisabled,
+                checked = levelDef.isArtifactDisabled == true,
                 onCheckedChange = {
-                    isArtifactDisabled = it
-                    levelDef.isArtifactDisabled = if (it) true else null
+                    levelDef = levelDef.copy(isArtifactDisabled = if (it) true else null)
+                    sync()
                 }
             )
 

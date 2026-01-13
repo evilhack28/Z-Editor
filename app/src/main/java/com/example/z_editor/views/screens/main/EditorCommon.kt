@@ -45,6 +45,8 @@ data class EditorActions(
     val onStageCanceled: () -> Unit,
 
     val onAddChallenge: (ChallengeTypeInfo) -> Unit,
+    val onInjectZombie: (String) -> String?,
+    val onEditCustomZombie: (String) -> Unit,
 
     val onLaunchPlantSelector: ((String) -> Unit) -> Unit,
     val onLaunchZombieSelector: ((String) -> Unit) -> Unit,

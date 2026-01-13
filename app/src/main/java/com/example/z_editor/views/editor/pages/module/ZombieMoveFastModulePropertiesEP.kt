@@ -39,9 +39,7 @@ import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,22 +54,13 @@ fun ZombieMoveFastModulePropertiesEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val themeColor = Color(0xFF654B80)
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, ZombieMoveFastModulePropertiesData::class.java)
-        } catch (_: Exception) {
-            ZombieMoveFastModulePropertiesData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, ZombieMoveFastModulePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
-
     Scaffold(
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) },
         topBar = {

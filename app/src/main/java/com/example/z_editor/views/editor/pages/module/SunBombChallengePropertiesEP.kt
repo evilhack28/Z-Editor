@@ -45,9 +45,7 @@ import com.example.z_editor.data.SunBombChallengeData
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,27 +60,12 @@ fun SunBombChallengePropertiesEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = info?.alias ?: "SunBombChallenge"
 
-    // 1. 初始化数据状态
-    val dataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, SunBombChallengeData::class.java)
-            } else {
-                SunBombChallengeData()
-            }
-        } catch (_: Exception) {
-            SunBombChallengeData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, SunBombChallengeData::class.java)
+    val moduleDataState = syncManager.dataState
 
-    // 2. 同步函数
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(dataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(
@@ -164,10 +147,10 @@ fun SunBombChallengePropertiesEP(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         NumberInputInt(
-                            value = dataState.value.plantBombExplosionRadius,
+                            value = moduleDataState.value.plantBombExplosionRadius,
                             onValueChange = {
-                                dataState.value =
-                                    dataState.value.copy(plantBombExplosionRadius = it)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(plantBombExplosionRadius = it)
                                 sync()
                             },
                             label = "植物爆炸半径",
@@ -175,10 +158,10 @@ fun SunBombChallengePropertiesEP(
                             modifier = Modifier.weight(1f)
                         )
                         NumberInputInt(
-                            value = dataState.value.zombieBombExplosionRadius,
+                            value = moduleDataState.value.zombieBombExplosionRadius,
                             onValueChange = {
-                                dataState.value =
-                                    dataState.value.copy(zombieBombExplosionRadius = it)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(zombieBombExplosionRadius = it)
                                 sync()
                             },
                             color = Color(0xFFFF9800),
@@ -200,9 +183,9 @@ fun SunBombChallengePropertiesEP(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         NumberInputInt(
-                            value = dataState.value.plantDamage,
+                            value = moduleDataState.value.plantDamage,
                             onValueChange = {
-                                dataState.value = dataState.value.copy(plantDamage = it)
+                                moduleDataState.value = moduleDataState.value.copy(plantDamage = it)
                                 sync()
                             },
                             color = Color(0xFFFF9800),
@@ -210,9 +193,10 @@ fun SunBombChallengePropertiesEP(
                             modifier = Modifier.weight(1f)
                         )
                         NumberInputInt(
-                            value = dataState.value.zombieDamage,
+                            value = moduleDataState.value.zombieDamage,
                             onValueChange = {
-                                dataState.value = dataState.value.copy(zombieDamage = it)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(zombieDamage = it)
                                 sync()
                             },
                             color = Color(0xFFFF9800),

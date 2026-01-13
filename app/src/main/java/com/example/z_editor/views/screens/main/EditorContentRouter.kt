@@ -12,6 +12,7 @@ import com.example.z_editor.data.ParsedLevelData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.repository.ReferenceRepository
+import com.example.z_editor.views.editor.pages.others.CustomZombiePropertiesEP
 import com.example.z_editor.views.editor.pages.event.BassRainEventEP
 import com.example.z_editor.views.editor.pages.event.BeachStageEventEP
 import com.example.z_editor.views.editor.pages.event.BlackHoleEventEP
@@ -239,7 +240,9 @@ fun EditorContentRouter(
                         onEditSettings = { actions.navigateTo(EditorSubScreen.WaveManagerSettings) },
                         onWavesChanged = actions.onWavesChanged,
                         onCreateContainer = actions.onCreateWaveContainer,
-                        onDeleteContainer = actions.onDeleteWaveContainer
+                        onDeleteContainer = actions.onDeleteWaveContainer,
+                        parsedData = parsedData,
+                        onEditCustomZombie = actions.onEditCustomZombie
                     )
                 }
 
@@ -272,7 +275,7 @@ fun EditorContentRouter(
         // ======================== 具体子页面：模块 ========================
 
         EditorSubScreen.BasicInfo -> LevelDefinitionEP(
-            levelDef = parsedData.levelDef!!,
+            rootLevelFile = rootLevelFile,
             onBack = actions.navigateBack,
             onNavigateToStageSelection = { actions.navigateTo(EditorSubScreen.StageSelection) },
             scrollState = getScrollState("BasicInfo")
@@ -288,15 +291,15 @@ fun EditorContentRouter(
                 objClass == "ConveyorSeedBankProperties"
             } == true
             WaveManagerPropertiesEP(
-                waveManager = parsedData.waveManager!!,
+                rootLevelFile = rootLevelFile,
                 hasConveyor = hasConveyor,
                 onBack = {
-                    actions.onSaveWaveManager()
                     actions.navigateBack()
                 },
                 scrollState = getScrollState("WaveManagerSettings")
             )
         }
+
 
         is EditorSubScreen.LastStandMinigame -> LastStandMinigamePropertiesEP(
             rtid = targetState.rtid,
@@ -496,7 +499,9 @@ fun EditorContentRouter(
             rootLevelFile = rootLevelFile,
             onRequestZombieSelection = actions.onLaunchZombieSelector,
             onRequestPlantSelection = actions.onLaunchPlantSelector,
-            scrollState = getLazyState(targetState.rtid)
+            scrollState = getLazyState(targetState.rtid),
+            onInjectZombie = actions.onInjectZombie,
+            onEditCustomZombie = actions.onEditCustomZombie
         )
 
         is EditorSubScreen.GroundWaveDetail -> SpawnZombiesFromGroundEventEP(
@@ -505,7 +510,9 @@ fun EditorContentRouter(
             rootLevelFile = rootLevelFile,
             onRequestZombieSelection = actions.onLaunchZombieSelector,
             onRequestPlantSelection = actions.onLaunchPlantSelector,
-            scrollState = getLazyState(targetState.rtid)
+            scrollState = getLazyState(targetState.rtid),
+            onInjectZombie = actions.onInjectZombie,
+            onEditCustomZombie = actions.onEditCustomZombie
         )
 
         is EditorSubScreen.ModifyConveyorDetail -> ModifyConveyorEventEP(
@@ -632,6 +639,16 @@ fun EditorContentRouter(
             onBack = actions.navigateBack,
             scrollState = getScrollState("InvalidEvent")
         )
+
+
+        is EditorSubScreen.CustomZombieProperties -> {
+            CustomZombiePropertiesEP(
+                rtid = targetState.rtid,
+                rootLevelFile = rootLevelFile!!,
+                onBack = { actions.navigateBack() },
+                scrollState = getScrollState("CustomZombie_${targetState.rtid}")
+            )
+        }
 
         // ======================== 选择器与导航 ========================
 

@@ -75,9 +75,7 @@ import com.example.z_editor.data.repository.PlantTag
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,29 +89,21 @@ fun InitialPlantEntryEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, InitialPlantEntryData::class.java)
-        } catch (_: Exception) {
-            InitialPlantEntryData()
-        }
-        mutableStateOf(data)
-    }
-
     var selectedX by remember { mutableIntStateOf(0) }
     var selectedY by remember { mutableIntStateOf(0) }
 
-    moduleDataState.value.plants.find {
-        it.gridX == selectedX && it.gridY == selectedY
-    }
-
     var editingPlant by remember { mutableStateOf<InitialPlantData?>(null) }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, InitialPlantEntryData::class.java)
+    val moduleDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
+    }
+
+    moduleDataState.value.plants.find {
+        it.gridX == selectedX && it.gridY == selectedY
     }
 
     moduleDataState.value.plants.filter {
@@ -127,13 +117,12 @@ fun InitialPlantEntryEP(
     fun handleSelectPlant() {
         onRequestPlantSelection { plantType ->
             val newList = moduleDataState.value.plants.toMutableList()
-            // 不再移除旧植物
             val newPlant = InitialPlantData(
                 gridX = selectedX,
                 gridY = selectedY,
                 level = 1,
                 plantTypes = mutableListOf(plantType),
-                avatar = false // 默认无装扮
+                avatar = false
             )
             newList.add(newPlant)
             moduleDataState.value = moduleDataState.value.copy(plants = newList)
@@ -158,9 +147,7 @@ fun InitialPlantEntryEP(
         sync()
     }
 
-    // 编辑弹窗
     if (editingPlant != null) {
-        // 临时状态
         var tempLevelFloat by remember { mutableFloatStateOf(editingPlant!!.level.toFloat()) }
         var tempAvatar by remember { mutableStateOf(editingPlant!!.avatar) }
 
@@ -172,7 +159,6 @@ fun InitialPlantEntryEP(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // 1. 等级滑块 (1-5)
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("等级: ${tempLevelFloat.toInt()}", fontWeight = FontWeight.Bold)
@@ -182,13 +168,12 @@ fun InitialPlantEntryEP(
                             value = tempLevelFloat,
                             onValueChange = { tempLevelFloat = it },
                             valueRange = 1f..5f,
-                            steps = 3 // 1, 2, 3, 4, 5 (中间3个点)
+                            steps = 3
                         )
                     }
 
                     HorizontalDivider()
 
-                    // 2. 装扮开关
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -213,7 +198,6 @@ fun InitialPlantEntryEP(
             },
             dismissButton = {
                 Row {
-                    // 左侧放删除按钮
                     TextButton(
                         onClick = {
                             deletePlant(editingPlant!!)

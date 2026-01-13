@@ -88,7 +88,7 @@ fun SunDropperPropertiesEP(
         mutableStateOf(data)
     }
 
-    fun syncData() {
+    fun sync() {
         if (isCustomMode) {
             rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
                 it.objData = gson.toJsonTree(sunDataState.value)
@@ -179,23 +179,23 @@ fun SunDropperPropertiesEP(
 
                     SunParamInput("首次掉落延迟", sunDataState.value.initialSunDropDelay) {
                         sunDataState.value = sunDataState.value.copy(initialSunDropDelay = it)
-                        syncData()
+                        sync()
                     }
                     SunParamInput("初始掉落间隔", sunDataState.value.sunCountdownBase) {
                         sunDataState.value = sunDataState.value.copy(sunCountdownBase = it)
-                        syncData()
+                        sync()
                     }
                     SunParamInput("最大掉落间隔", sunDataState.value.sunCountdownMax) {
                         sunDataState.value = sunDataState.value.copy(sunCountdownMax = it)
-                        syncData()
+                        sync()
                     }
                     SunParamInput("间隔浮动范围", sunDataState.value.sunCountdownRange) {
                         sunDataState.value = sunDataState.value.copy(sunCountdownRange = it)
-                        syncData()
+                        sync()
                     }
                     SunParamInput("单次增加间隔", sunDataState.value.sunCountdownIncreasePerSun) {
                         sunDataState.value = sunDataState.value.copy(sunCountdownIncreasePerSun = it)
-                        syncData()
+                        sync()
                     }
                 }
             }

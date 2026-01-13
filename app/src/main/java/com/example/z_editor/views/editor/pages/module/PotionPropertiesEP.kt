@@ -47,7 +47,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.PotionSpawnTimerData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.ZombiePotionModulePropertiesData
@@ -56,9 +55,7 @@ import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,25 +70,14 @@ fun ZombiePotionModulePropertiesEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // 主题色：深紫色 (代表药水/黑暗时代)
     val themeColor = Color(0xFF673AB7)
 
-    // 1. 初始化数据
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, ZombiePotionModulePropertiesData::class.java)
-        } catch (_: Exception) {
-            ZombiePotionModulePropertiesData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, ZombiePotionModulePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
-    // 2. 同步函数
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(
@@ -165,7 +151,8 @@ fun ZombiePotionModulePropertiesEP(
                         NumberInputInt(
                             value = moduleDataState.value.initialPotionCount,
                             onValueChange = {
-                                moduleDataState.value = moduleDataState.value.copy(initialPotionCount = it)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(initialPotionCount = it)
                                 sync()
                             },
                             label = "初始数量 (Initial)",
@@ -175,7 +162,8 @@ fun ZombiePotionModulePropertiesEP(
                         NumberInputInt(
                             value = moduleDataState.value.maxPotionCount,
                             onValueChange = {
-                                moduleDataState.value = moduleDataState.value.copy(maxPotionCount = it)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(maxPotionCount = it)
                                 sync()
                             },
                             label = "最大数量 (MaxCount)",
@@ -204,7 +192,8 @@ fun ZombiePotionModulePropertiesEP(
                             value = moduleDataState.value.potionSpawnTimer.min,
                             onValueChange = {
                                 val newTimer = moduleDataState.value.potionSpawnTimer.copy(min = it)
-                                moduleDataState.value = moduleDataState.value.copy(potionSpawnTimer = newTimer)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(potionSpawnTimer = newTimer)
                                 sync()
                             },
                             label = "最小间隔 (秒)",
@@ -215,7 +204,8 @@ fun ZombiePotionModulePropertiesEP(
                             value = moduleDataState.value.potionSpawnTimer.max,
                             onValueChange = {
                                 val newTimer = moduleDataState.value.potionSpawnTimer.copy(max = it)
-                                moduleDataState.value = moduleDataState.value.copy(potionSpawnTimer = newTimer)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(potionSpawnTimer = newTimer)
                                 sync()
                             },
                             label = "最大间隔 (秒)",
@@ -245,7 +235,8 @@ fun ZombiePotionModulePropertiesEP(
                                 val newList = moduleDataState.value.potionTypes.toMutableList()
                                 if (!newList.contains(selectedType)) {
                                     newList.add(selectedType)
-                                    moduleDataState.value = moduleDataState.value.copy(potionTypes = newList)
+                                    moduleDataState.value =
+                                        moduleDataState.value.copy(potionTypes = newList)
                                     sync()
                                 }
                             }
@@ -299,9 +290,11 @@ fun ZombiePotionModulePropertiesEP(
                                     }
 
                                     IconButton(onClick = {
-                                        val newList = moduleDataState.value.potionTypes.toMutableList()
+                                        val newList =
+                                            moduleDataState.value.potionTypes.toMutableList()
                                         newList.removeAt(index)
-                                        moduleDataState.value = moduleDataState.value.copy(potionTypes = newList)
+                                        moduleDataState.value =
+                                            moduleDataState.value.copy(potionTypes = newList)
                                         sync()
                                     }) {
                                         Icon(

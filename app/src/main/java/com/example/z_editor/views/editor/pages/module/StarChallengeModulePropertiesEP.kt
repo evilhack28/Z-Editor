@@ -79,6 +79,7 @@ import com.example.z_editor.data.StarChallengeSpendSunHoldoutData
 import com.example.z_editor.data.StarChallengeSunProducedData
 import com.example.z_editor.data.StarChallengeSunReducedData
 import com.example.z_editor.data.StarChallengeSunUsedData
+import com.example.z_editor.data.StarChallengeTargetScoreData
 import com.example.z_editor.data.StarChallengeUnfreezePlantsData
 import com.example.z_editor.data.StarChallengeZombieDistanceData
 import com.example.z_editor.data.StarChallengeZombieSpeedData
@@ -272,7 +273,6 @@ fun StarChallengeModulePropertiesEP(
     }
 }
 
-// === 列表项卡片 (更新了Icon逻辑) ===
 @Composable
 fun ChallengeItemCard(
     rtid: String,
@@ -284,7 +284,6 @@ fun ChallengeItemCard(
     val alias = info?.alias ?: rtid
     val source = info?.source ?: "Unknown"
 
-    // 尝试从 objectMap 查找
     val rawObjClass = if (source == "CurrentLevel") {
         objectMap[alias]?.objClass
     } else {
@@ -297,11 +296,9 @@ fun ChallengeItemCard(
     val displayName = getChallengeDisplayName(objClass)
     val isEditable = source == "CurrentLevel" && !isMissing
 
-    // 视觉状态区分
     val themeColor = if (isMissing) Color.Red else Color(0xFFE8A000)
-    val containerColor = if (isMissing) Color(0xFFFFEBEE) else Color.White // 错误时浅红背景
+    val containerColor = if (isMissing) Color(0xFFFFEBEE) else Color.White
 
-    // 图标区分
     val challengeInfo = ChallengeRepository.getInfo(objClass)
     val icon = if (isMissing) Icons.Default.BrokenImage else (challengeInfo?.icon ?: Icons.Default.Extension)
 
@@ -309,7 +306,7 @@ fun ChallengeItemCard(
         onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(2.dp),
-        border = if (isMissing) androidx.compose.foundation.BorderStroke(1.dp, Color.Red) else null, // 错误时加红框
+        border = if (isMissing) androidx.compose.foundation.BorderStroke(1.dp, Color.Red) else null,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -354,7 +351,6 @@ fun ChallengeItemCard(
     }
 }
 
-// === 新增：底部横向添加按钮 ===
 @Composable
 fun AddChallengeButton(onClick: () -> Unit) {
     Box(
@@ -374,7 +370,6 @@ fun AddChallengeButton(onClick: () -> Unit) {
     }
 }
 
-// === 核心：挑战参数编辑弹窗 (保持不变) ===
 @Composable
 fun ChallengeEditDialog(
     rtid: String,
@@ -548,6 +543,17 @@ fun ChallengeEditDialog(
                 initialData = gson.fromJson(
                     obj.objData,
                     StarChallengeBlowZombieData::class.java
+                ),
+                onDismiss = onDismiss,
+                onConfirm = onSave
+            )
+        }
+
+        "StarChallengeTargetScoreProps" -> {
+            TargetScoreEditDialog(
+                initialData = gson.fromJson(
+                    obj.objData,
+                    StarChallengeTargetScoreData::class.java
                 ),
                 onDismiss = onDismiss,
                 onConfirm = onSave
@@ -1258,6 +1264,54 @@ fun BlowZombieEditDialog(
 }
 
 
+@Composable
+fun TargetScoreEditDialog(
+    initialData: StarChallengeTargetScoreData,
+    onDismiss: () -> Unit,
+    onConfirm: (StarChallengeTargetScoreData) -> Unit
+) {
+    var targetScore by remember { mutableIntStateOf(initialData.targetScore) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "获取积分挑战",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column {
+                Text("达到目标积分，需开启关卡积分模块", fontSize = 14.sp, color = Color.Gray)
+                Spacer(Modifier.height(16.dp))
+                NumberInputInt(
+                    color = Color(0xFFFF9800),
+                    value = targetScore,
+                    onValueChange = { targetScore = it },
+                    label = "目标积分 (targetScore)",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm(initialData.copy(targetScore = targetScore))
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8A000))
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+
 private fun getChallengeDisplayName(objClass: String): String {
     return ChallengeRepository.getInfo(objClass)?.title
         ?: when (objClass) {
@@ -1276,6 +1330,7 @@ private fun getChallengeDisplayName(objClass: String): String {
             "StarChallengeSimultaneousPlantsProps" -> "限制种植数挑战"
             "StarChallengeUnfreezePlantsProps" -> "解冻植物挑战"
             "StarChallengeBlowZombieProps" -> "吹飞僵尸挑战"
+            "StarChallengeTargetScoreProps" -> "获取积分挑战"
             else -> objClass.replace("StarChallenge", "").replace("Props", "")
         }
 }

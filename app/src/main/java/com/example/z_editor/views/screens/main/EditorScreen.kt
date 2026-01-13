@@ -32,7 +32,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -175,6 +174,51 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             if (meta.title == "未知模块" && objClass != "Unknown") null else meta
         }
     }
+    fun injectCustomZombie(originalAlias: String): String? {
+        val typeName = ZombiePropertiesRepository.getTypeNameByAlias(originalAlias)
+        val template = ZombiePropertiesRepository.getTemplateJson(typeName)
+        if (template == null) {
+            Toast.makeText(context, "无法获取 $typeName 的原始数据模板", Toast.LENGTH_SHORT).show()
+            return null
+        }
+        val (templateTypeJson, templatePropsJson) = template
+        val baseName = typeName
+        var index = 1
+        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_$index") == true }) {
+            index++
+        }
+        val newTypeAlias = "${baseName}_$index"
+
+        var propsIndex = index
+        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_props_$propsIndex") == true }) {
+            propsIndex++
+        }
+        val newPropsAlias = "${baseName}_props_$propsIndex"
+        val newPropsJson = gson.fromJson(gson.toJson(templatePropsJson), com.google.gson.JsonElement::class.java)
+
+        val newPropsObj = PvzObject(
+            aliases = listOf(newPropsAlias),
+            objClass = "ZombiePropertySheet",
+            objData = newPropsJson
+        )
+        val newTypeJson = gson.fromJson(gson.toJson(templateTypeJson), com.google.gson.JsonObject::class.java)
+        newTypeJson.addProperty("Properties", RtidParser.build(newPropsAlias, "CurrentLevel"))
+        val newTypeObj = PvzObject(
+            aliases = listOf(newTypeAlias),
+            objClass = "ZombieType",
+            objData = newTypeJson
+        )
+
+        rootLevelFile!!.objects.add(newPropsObj)
+        rootLevelFile!!.objects.add(newTypeObj)
+
+        val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+        parsedData = parsedData!!.copy(objectMap = newObjectMap)
+        refreshTrigger++
+
+        Toast.makeText(context, "已注入自定义僵尸: $newTypeAlias", Toast.LENGTH_SHORT).show()
+        return RtidParser.build(newTypeAlias, "CurrentLevel")
+    }
 
     LaunchedEffect(currentFileName) {
         ReferenceRepository.init(context)
@@ -199,10 +243,6 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
     fun performSave(isExit: Boolean = false) {
         if (rootLevelFile == null || parsedData == null) return
         try {
-            rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }?.objData =
-                gson.toJsonTree(parsedData!!.levelDef)
-            rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.objData =
-                gson.toJsonTree(parsedData!!.waveManager)
             LevelRepository.saveAndExport(context, currentFileName, rootLevelFile!!)
             val msg = if (isExit) "已自动保存并退出" else "保存成功"
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -303,6 +343,18 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                                 e.printStackTrace()
                             }
                         }
+                        val levelDefObj = rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
+                        if (levelDefObj != null) {
+                            try {
+                                val json = levelDefObj.objData.asJsonObject
+                                val modulesJsonArray = com.google.gson.JsonArray()
+                                parsedData!!.levelDef!!.modules.forEach {
+                                    modulesJsonArray.add(it)
+                                }
+                                json.add("Modules", modulesJsonArray)
+                                levelDefObj.objData = json
+                            } catch (e: Exception) { e.printStackTrace() }
+                        }
                     }
 
                     if (info?.source == "CurrentLevel") {
@@ -354,6 +406,18 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                         }
                     }
                     val newRtid = RtidParser.build(finalAlias, meta.defaultSource)
+                    val levelDefObj = rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
+                    if (levelDefObj != null) {
+                        try {
+                            val json = levelDefObj.objData.asJsonObject
+                            if (!json.has("Modules")) {
+                                json.add("Modules", com.google.gson.JsonArray())
+                            }
+                            val modulesArray = json.getAsJsonArray("Modules")
+                            modulesArray.add(newRtid)
+                            levelDefObj.objData = json
+                        } catch (e: Exception) { e.printStackTrace() }
+                    }
                     if (meta.defaultSource == "CurrentLevel") {
                         if (meta.initialDataFactory != null) {
                             var initialData = meta.initialDataFactory.invoke()
@@ -508,7 +572,23 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             },
 
             onStageSelected = { newRtid ->
-                parsedData?.levelDef?.stageModule = newRtid
+                val levelDefObj = rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
+                if (levelDefObj != null) {
+                    try {
+                        val json = if (levelDefObj.objData.isJsonObject)
+                            levelDefObj.objData.asJsonObject
+                        else
+                            gson.toJsonTree(parsedData!!.levelDef).asJsonObject
+                        json.addProperty("StageModule", newRtid)
+
+                        levelDefObj.objData = json
+
+                        parsedData?.levelDef?.stageModule = newRtid
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
                 currentSubScreen = EditorSubScreen.BasicInfo
                 refreshTrigger++
             },
@@ -661,6 +741,10 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 previousSubScreen = currentSubScreen
                 genericSelectionCallback = { id -> cb(id as String) }
                 currentSubScreen = EditorSubScreen.ZombossSelection
+            },
+            onInjectZombie = { alias -> injectCustomZombie(alias) },
+            onEditCustomZombie = { rtid ->
+                currentSubScreen = EditorSubScreen.CustomZombieProperties(rtid)
             }
         )
     }
@@ -705,14 +789,16 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 if (targetState == EditorSubScreen.PlantSelection() || targetState == EditorSubScreen.ZombieSelection()
                     || targetState == EditorSubScreen.PlantSelection(isMultiSelect = true)
                     || targetState == EditorSubScreen.ZombieSelection(isMultiSelect = true)
+                    || targetState is EditorSubScreen.CustomZombieProperties
                     || targetState == EditorSubScreen.StageSelection || targetState == EditorSubScreen.GridItemSelection
                     || targetState == EditorSubScreen.ChallengeSelection || targetState == EditorSubScreen.ToolSelection
                 ) {
                     (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
                         slideOutHorizontally { width -> -width / 3 } + fadeOut())
                 } else if (initialState == EditorSubScreen.PlantSelection() || initialState == EditorSubScreen.ZombieSelection()
-                    || targetState == EditorSubScreen.PlantSelection(isMultiSelect = true)
-                    || targetState == EditorSubScreen.ZombieSelection(isMultiSelect = true)
+                    || initialState == EditorSubScreen.PlantSelection(isMultiSelect = true)
+                    || initialState == EditorSubScreen.ZombieSelection(isMultiSelect = true)
+                    || initialState  is EditorSubScreen.CustomZombieProperties
                     || initialState == EditorSubScreen.StageSelection || initialState == EditorSubScreen.GridItemSelection
                     || initialState == EditorSubScreen.ChallengeSelection || initialState == EditorSubScreen.ToolSelection
                 ) {

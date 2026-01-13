@@ -28,6 +28,7 @@ import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
+import rememberJsonSync
 
 private val gson = Gson()
 
@@ -52,21 +53,13 @@ fun BassRainEventEP(
 
     val themeColor = Color(0xFF9C27B0)
 
-    val actionDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, ParachuteRainEventData::class.java)
-        } catch (_: Exception) {
-            ParachuteRainEventData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, ParachuteRainEventData::class.java)
+    val actionDataState = syncManager.dataState
 
     fun sync(newData: ParachuteRainEventData) {
         actionDataState.value = newData
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(newData)
-        }
+        syncManager.sync()
     }
 
     Scaffold(

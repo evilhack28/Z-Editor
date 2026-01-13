@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -65,9 +64,7 @@ import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,20 +79,12 @@ fun StormZombieSpawnerPropsEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val stormDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val initialData = try {
-            gson.fromJson(obj?.objData, StormZombieSpawnerPropsData::class.java)
-        } catch (_: Exception) {
-            StormZombieSpawnerPropsData()
-        }
-        mutableStateOf(initialData)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, StormZombieSpawnerPropsData::class.java)
+    val stormDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(stormDataState.value)
-        }
+        syncManager.sync()
     }
 
     var listRefreshTrigger by remember { mutableIntStateOf(0) }
@@ -110,7 +99,13 @@ fun StormZombieSpawnerPropsEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text("事件类型：风暴突袭", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },
@@ -338,8 +333,10 @@ fun StormZombieSpawnerPropsEP(
                         key(listRefreshTrigger) {
                             stormDataState.value.zombies.forEachIndexed { index, zombie ->
                                 val alias = RtidParser.parse(zombie.type)?.alias ?: zombie.type
-                                val realTypeName = ZombiePropertiesRepository.getTypeNameByAlias(alias)
-                                val info = ZombieRepository.search(realTypeName, ZombieTag.All).firstOrNull()
+                                val realTypeName =
+                                    ZombiePropertiesRepository.getTypeNameByAlias(alias)
+                                val info = ZombieRepository.search(realTypeName, ZombieTag.All)
+                                    .firstOrNull()
                                 val displayName = info?.name ?: realTypeName
                                 val placeholderContent = @Composable {
                                     Box(
@@ -372,7 +369,11 @@ fun StormZombieSpawnerPropsEP(
                                             .size(40.dp)
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(Color.White)
-                                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp)),
+                                            .border(
+                                                1.dp,
+                                                Color.LightGray,
+                                                RoundedCornerShape(8.dp)
+                                            ),
                                         filterQuality = FilterQuality.Medium,
                                         placeholder = placeholderContent
                                     )
@@ -385,28 +386,42 @@ fun StormZombieSpawnerPropsEP(
 
                                     IconButton(
                                         onClick = {
-                                            val newList = stormDataState.value.zombies.toMutableList()
+                                            val newList =
+                                                stormDataState.value.zombies.toMutableList()
                                             val zombieToCopy = newList[index]
                                             newList.add(index + 1, zombieToCopy.copy())
 
-                                            stormDataState.value = stormDataState.value.copy(zombies = newList)
+                                            stormDataState.value =
+                                                stormDataState.value.copy(zombies = newList)
                                             sync()
                                             listRefreshTrigger++
                                         }
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                     }
 
                                     IconButton(
                                         onClick = {
-                                            val newList = stormDataState.value.zombies.toMutableList()
+                                            val newList =
+                                                stormDataState.value.zombies.toMutableList()
                                             newList.removeAt(index)
-                                            stormDataState.value = stormDataState.value.copy(zombies = newList)
+                                            stormDataState.value =
+                                                stormDataState.value.copy(zombies = newList)
                                             sync()
                                             listRefreshTrigger++
                                         }
                                     ) {
-                                        Icon(Icons.Default.Delete, null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            null,
+                                            tint = Color.LightGray,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }

@@ -33,7 +33,6 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CompareArrows
-import androidx.compose.material.icons.filled.LooksOne
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -73,9 +72,7 @@ import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,18 +85,6 @@ fun MagicMirrorEventEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, MagicMirrorWaveActionData::class.java)
-        } catch (_: Exception) {
-            MagicMirrorWaveActionData()
-        }
-        if (data.arrays.isEmpty()) {
-            data.arrays.add(MagicMirrorArrayData(2, 2, 6, 2, 1, 300))
-        }
-        mutableStateOf(data)
-    }
 
     var selectedIndex by remember { mutableIntStateOf(0) }
     var isEditingMirror2 by remember { mutableStateOf(false) }
@@ -110,10 +95,12 @@ fun MagicMirrorEventEP(
     val themeColor = Color(0xFF7C30D9)
     val inactiveColor = Color.LightGray
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, MagicMirrorWaveActionData::class.java)
+    val eventDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     val currentArray = eventDataState.value.arrays.getOrNull(selectedIndex)
@@ -417,14 +404,18 @@ fun MagicMirrorEventEP(
                                     for (row in 0..4) {
                                         Row(Modifier.weight(1f)) {
                                             for (col in 0..8) {
-                                                val mirrorsInCell = eventDataState.value.arrays.mapIndexedNotNull { idx, data ->
-                                                    if (data.mirror1GridX == col && data.mirror1GridY == row) idx to 1
-                                                    else if (data.mirror2GridX == col && data.mirror2GridY == row) idx to 2
-                                                    else null
-                                                }
+                                                val mirrorsInCell =
+                                                    eventDataState.value.arrays.mapIndexedNotNull { idx, data ->
+                                                        if (data.mirror1GridX == col && data.mirror1GridY == row) idx to 1
+                                                        else if (data.mirror2GridX == col && data.mirror2GridY == row) idx to 2
+                                                        else null
+                                                    }
 
-                                                val mirrorInCell = mirrorsInCell.find { it.first == selectedIndex } ?: mirrorsInCell.lastOrNull()
-                                                val isCurrentGroup = mirrorInCell?.first == selectedIndex
+                                                val mirrorInCell =
+                                                    mirrorsInCell.find { it.first == selectedIndex }
+                                                        ?: mirrorsInCell.lastOrNull()
+                                                val isCurrentGroup =
+                                                    mirrorInCell?.first == selectedIndex
 
                                                 Box(
                                                     modifier = Modifier

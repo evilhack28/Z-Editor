@@ -81,9 +81,7 @@ import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 private val ZOMBIE_CONDITIONS = listOf(
     "icecubed" to "冰块封装 (icecubed)",
@@ -104,25 +102,17 @@ fun InitialZombieEntryEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, InitialZombieEntryData::class.java)
-        } catch (_: Exception) {
-            InitialZombieEntryData()
-        }
-        mutableStateOf(data)
-    }
-
     var selectedX by remember { mutableIntStateOf(0) }
     var selectedY by remember { mutableIntStateOf(0) }
 
     var editingPlacement by remember { mutableStateOf<InitialZombieData?>(null) }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, InitialZombieEntryData::class.java)
+    val moduleDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     moduleDataState.value.placements.filter {

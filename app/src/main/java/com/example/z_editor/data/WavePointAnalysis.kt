@@ -82,10 +82,10 @@ object WavePointAnalysis {
             // 解析别名 -> 查标准名 -> 查属性
             val alias = RtidParser.parse(rtid)?.alias ?: rtid
             val typeName = ZombiePropertiesRepository.getTypeNameByAlias(alias)
-            val stats = ZombiePropertiesRepository.getStats(typeName)
+            val stats = ZombiePropertiesRepository.getStats(typeName.toString())
 
             ExpectationCalculator.InputEntry(
-                id = typeName,
+                id = typeName.toString(),
                 cost = stats.cost,
                 weight = stats.weight.toDouble()
             )

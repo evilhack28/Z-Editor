@@ -37,9 +37,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.StepperControl
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,20 +52,12 @@ fun BowlingMinigamePropertiesEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val themeColor = Color(0xFF1976D2)
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, BowlingMinigamePropertiesData::class.java)
-        } catch (_: Exception) {
-            BowlingMinigamePropertiesData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, BowlingMinigamePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(

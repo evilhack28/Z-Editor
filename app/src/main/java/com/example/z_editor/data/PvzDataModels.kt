@@ -22,7 +22,7 @@ data class PvzObject(
 // === 关卡定义 ===
 data class LevelDefinitionData(
     @SerializedName("Name") var name: String = "",
-    @SerializedName("LevelNumber") var levelNumber: Int = 1,
+    @SerializedName("LevelNumber") var levelNumber: Int? = 1,
     @SerializedName("Description") var description: String = "",
     @SerializedName("StageModule") var stageModule: String = "",
     @SerializedName("Loot") var loot: String = "RTID(DefaultLoot@LevelModules)",
@@ -227,6 +227,10 @@ data class StarChallengeBlowZombieData(
     @SerializedName("Count") var count: Int = 0
 )
 
+data class StarChallengeTargetScoreData(
+    @SerializedName("TargetScore") var targetScore: Int = 20000
+)
+
 // === 甲板模块 ===
 data class PiratePlankPropertiesData(
     @SerializedName("PlankRows") var plankRows: MutableList<Int> = mutableListOf()
@@ -341,6 +345,15 @@ data class RoofPropertiesData(
     @SerializedName("FlowerPotEndColumn") var flowerPotEndColumn: Int = 2
 )
 
+// === 积分模块 ===
+data class LevelScoringData(
+    @SerializedName("PlantBonusMultiplier") var plantBonusMultiplier: Double = 0.0,
+    @SerializedName("PlantBonuses") var plantBonuses: MutableList<String> = mutableListOf(),
+    @SerializedName("ScoringRulesType") var scoringRulesType: String = "NoMultiplier",
+    @SerializedName("StartingPlantfood") var startingPlantfood: Int = 0
+)
+
+
 // ======================== 2. 物体属性解析 ========================
 
 // === 通用僵尸数据 ===
@@ -353,21 +366,6 @@ data class ZombieSpawnData(
 )
 
 // === 僵尸属性解析 ===
-data class ZombieTypeData(
-    @SerializedName("TypeName") var typeName: String = "",
-    @SerializedName("Properties") var properties: String = ""
-)
-
-data class ZombiePropertySheetData(
-    @SerializedName("WavePointCost") var wavePointCost: Int = 0,
-    @SerializedName("Weight") var weight: Double = 0.0,
-    @SerializedName("Hitpoints") var hitpoints: Double = 0.0,
-    @SerializedName("Speed") var speed: Double = 0.0,
-    @SerializedName("EatDPS") var eatDPS: Double = 0.0,
-    @SerializedName("CanSurrender") var canSurrender: Boolean = false,
-    @SerializedName("SizeType") var sizeType: String = ""
-)
-
 data class ZombieStats(
     val id: String,
     val hp: Double,
@@ -376,6 +374,58 @@ data class ZombieStats(
     val speed: Double,
     val eatDPS: Double,
     val sizeType: String
+)
+
+data class ZombieTypeData(
+    @SerializedName("TypeName") var typeName: String = "",
+    @SerializedName("Properties") var properties: String = ""
+)
+
+data class RectData(
+    @SerializedName("mX") var mX: Int = 0,
+    @SerializedName("mY") var mY: Int = 0,
+    @SerializedName("mWidth") var mWidth: Int = 0,
+    @SerializedName("mHeight") var mHeight: Int = 0
+)
+
+data class Point2D(
+    @SerializedName("x") var x: Int = 0,
+    @SerializedName("y") var y: Int = 0
+)
+
+data class Point3DDouble(
+    @SerializedName("x") var x: Double = 0.0,
+    @SerializedName("y") var y: Double = 0.0,
+    @SerializedName("z") var z: Double = 0.0
+)
+
+data class ZombiePropertySheetData(
+    @SerializedName("Hitpoints") var hitpoints: Double = 0.0,
+    @SerializedName("Speed") var speed: Double = 0.0,
+    @SerializedName("SpeedVariance") var speedVariance: Double? = null,
+    @SerializedName("EatDPS") var eatDPS: Double = 0.0,
+    @SerializedName("Weight") var weight: Int = 0,
+    @SerializedName("WavePointCost") var wavePointCost: Int = 0,
+    @SerializedName("SizeType") var sizeType: String? = null,
+    @SerializedName("HitRect") var hitRect: RectData? = null,
+    @SerializedName("AttackRect") var attackRect: RectData? = null,
+    @SerializedName("ArtCenter") var artCenter: Point2D? = null,
+    @SerializedName("ShadowOffset") var shadowOffset: Point3DDouble? = null,
+    @SerializedName("GroundTrackName") var groundTrackName: String = "",
+    @SerializedName("CanSpawnPlantFood") var canSpawnPlantFood: Boolean = false,
+    @SerializedName("CanSurrender") var canSurrender: Boolean? = null,
+    @SerializedName("EnableShowHealthBarByDamage") var enableShowHealthBarByDamage: Boolean? = null,
+    @SerializedName("CanBePlantTossedweak") var canBePlantTossedweak: Boolean? = null,
+    @SerializedName("CanBePlantTossedStrong") var canBePlantTossedStrong: Boolean? = null,
+    @SerializedName("CanBeLaunchedByPlants") var canBeLaunchedByPlants: Boolean? = null,
+    @SerializedName("DrawHealthBarTime") var drawHealthBarTime: Double? = null,
+    @SerializedName("EnableEliteImmunities") var enableEliteImmunities: Boolean? = null,
+    @SerializedName("EnableEliteScale") var enableEliteScale: Boolean? = null,
+    @SerializedName("CanTriggerZombieWin") var canTriggerZombieWin: Boolean? = null,
+    @SerializedName("ChillInsteadOfFreeze") var chillInsteadOfFreeze: Boolean? = null,
+    @SerializedName("EliteScale") var eliteScale: Double? = null,
+    @SerializedName("ArmDropFraction") var armDropFraction: Int? = null,
+    @SerializedName("HeadDropFraction") var headDropFraction: Int? = null,
 )
 
 

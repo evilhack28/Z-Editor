@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -67,9 +66,7 @@ import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,24 +83,16 @@ fun SpawnGraveStonesEventEP(
 
     val themeColor = Color(0xFF607D8B)
 
-    val actionDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, SpawnGraveStonesData::class.java)
-        } catch (_: Exception) {
-            SpawnGraveStonesData()
-        }
-        mutableStateOf(data)
-    }
-
     val internalObjectAliases = remember(rootLevelFile.objects.size, rootLevelFile.hashCode()) {
         rootLevelFile.objects.flatMap { it.aliases ?: emptyList() }.toSet()
     }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, SpawnGraveStonesData::class.java)
+    val actionDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(actionDataState.value)
-        }
+        syncManager.sync()
     }
 
     fun togglePosition(col: Int, row: Int) {
@@ -367,7 +356,10 @@ fun SpawnGraveStonesEventEP(
                 Card(
                     colors = CardDefaults.cardColors(containerColor = if (!isValid) Color(0xFFF8F1F1) else Color.White),
                     elevation = CardDefaults.cardElevation(1.dp),
-                    border = if (!isValid) androidx.compose.foundation.BorderStroke(1.dp, Color.Red) else null
+                    border = if (!isValid) androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        Color.Red
+                    ) else null
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),

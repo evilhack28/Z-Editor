@@ -65,9 +65,7 @@ import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -83,24 +81,16 @@ fun SeedBankPropertiesEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = RtidParser.parse(rtid)?.alias ?: ""
 
-    val seedBankDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, SeedBankData::class.java)
-        } catch (_: Exception) {
-            SeedBankData()
-        }
-        mutableStateOf(data)
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, SeedBankData::class.java)
+    val seedBankDataState = syncManager.dataState
+
+    fun sync() {
+        syncManager.sync()
     }
 
     val isZombieMode = seedBankDataState.value.zombieMode == true
     val isReversedZombie = seedBankDataState.value.seedPacketType == "UIIZombieSeedPacket"
-
-    fun syncData() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(seedBankDataState.value)
-        }
-    }
 
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -205,7 +195,7 @@ fun SeedBankPropertiesEP(
                             onClick = {
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(selectionMethod = "chooser")
-                                syncData()
+                                sync()
                             }
                         )
                         SelectionMethodChip(
@@ -215,7 +205,7 @@ fun SeedBankPropertiesEP(
                             onClick = {
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(selectionMethod = "preset")
-                                syncData()
+                                sync()
                             }
                         )
                     }
@@ -240,7 +230,7 @@ fun SeedBankPropertiesEP(
                                 val finalVal = if (clamped == 0) null else clamped
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(globalLevel = finalVal)
-                                syncData()
+                                sync()
                             },
                             label = "植物等级 (0-5)",
                             modifier = Modifier.weight(1f)
@@ -253,7 +243,7 @@ fun SeedBankPropertiesEP(
                                 val clamped = input.coerceIn(0, 9)
                                 seedBankDataState.value =
                                     seedBankDataState.value.copy(overrideSeedSlotsCount = clamped)
-                                syncData()
+                                sync()
                             },
                             modifier = Modifier.weight(1f),
                             label = "卡槽数量 (0-9)"
@@ -279,7 +269,7 @@ fun SeedBankPropertiesEP(
                     onListChanged = { newList ->
                         seedBankDataState.value =
                             seedBankDataState.value.copy(presetPlantList = newList)
-                        syncData()
+                        sync()
                     },
                     onAddRequest = onRequestZombieSelection
                 )
@@ -294,7 +284,7 @@ fun SeedBankPropertiesEP(
                     onListChanged = { newList ->
                         seedBankDataState.value =
                             seedBankDataState.value.copy(presetPlantList = newList)
-                        syncData()
+                        sync()
                     },
                     onAddRequest = onRequestPlantSelection
                 )
@@ -309,7 +299,7 @@ fun SeedBankPropertiesEP(
                     onListChanged = { newList ->
                         seedBankDataState.value =
                             seedBankDataState.value.copy(plantWhiteList = newList)
-                        syncData()
+                        sync()
                     },
                     onAddRequest = onRequestPlantSelection
                 )
@@ -324,7 +314,7 @@ fun SeedBankPropertiesEP(
                     onListChanged = { newList ->
                         seedBankDataState.value =
                             seedBankDataState.value.copy(plantBlackList = newList)
-                        syncData()
+                        sync()
                     },
                     onAddRequest = onRequestPlantSelection
                 )
@@ -356,7 +346,9 @@ fun SeedBankPropertiesEP(
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -386,7 +378,7 @@ fun SeedBankPropertiesEP(
                                 newData.copy(seedPacketType = null)
                             }
                             seedBankDataState.value = newData
-                            syncData()
+                            sync()
                         }
                     )
                 }
@@ -398,7 +390,9 @@ fun SeedBankPropertiesEP(
             ) {
                 if (isZombieMode) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -429,7 +423,7 @@ fun SeedBankPropertiesEP(
                                     seedPacketType = if (checked) "UIIZombieSeedPacket" else null
                                 )
                                 seedBankDataState.value = newData
-                                syncData()
+                                sync()
                             }
                         )
                     }
@@ -501,7 +495,8 @@ fun ResourceListEditor(
                         val currentList = items.toMutableList()
 
                         selectedIds.forEach { newId ->
-                            val alias = if (isZombie) ZombieRepository.buildAliases(newId) else newId
+                            val alias =
+                                if (isZombie) ZombieRepository.buildAliases(newId) else newId
                             currentList.add(alias)
                         }
                         onListChanged(currentList)

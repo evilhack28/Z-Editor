@@ -4,7 +4,7 @@
       "objclass": "LevelDefinition",
       "objdata": {
         "Description": "本关为僵王战示例关",
-        "LevelNumber": 1,
+        "LevelNumber": 7,
         "Loot": "RTID(DefaultLoot@LevelModules)",
         "Modules": [
           "RTID(DefaultCustomLevel@LevelModules)",

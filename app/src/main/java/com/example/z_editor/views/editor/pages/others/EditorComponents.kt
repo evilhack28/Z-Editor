@@ -27,10 +27,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -398,7 +401,11 @@ fun ZombieEditSheetContent(
     objectMap: Map<String, PvzObject>,
     onValueChange: (ZombieSpawnData) -> Unit,
     onCopy: (() -> Unit)? = null,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onInjectCustom: (String) -> Unit,
+    onEditCustom: (String) -> Unit,
+    compatibleCustomZombies: List<Pair<String, String>> = emptyList(),
+    onSelectExistingCustom: ((String) -> Unit)? = null
 ) {
     // === 核心解析逻辑 ===
     val resolverResult = remember(originalZombie.type, objectMap) {
@@ -408,6 +415,7 @@ fun ZombieEditSheetContent(
     val isValid = resolverResult.second
     val rtidInfo = remember(originalZombie.type) { RtidParser.parse(originalZombie.type) }
     val isCustom = rtidInfo?.source == "CurrentLevel"
+    var showSwapDialog by remember { mutableStateOf(false) }
 
     val alias = rtidInfo?.alias ?: originalZombie.type
     val displayName = if (isCustom) alias else ZombieRepository.getName(baseTypeName)
@@ -422,8 +430,15 @@ fun ZombieEditSheetContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if(isValid) Color(0xFFEEEEEE) else Color(0xFFFFEBEE), RoundedCornerShape(16.dp))
-                .border(1.dp, if(isValid) Color.LightGray else Color.Red, RoundedCornerShape(16.dp)),
+                .background(
+                    if (isValid) Color(0xFFEEEEEE) else Color(0xFFFFEBEE),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(
+                    1.dp,
+                    if (isValid) Color.LightGray else Color.Red,
+                    RoundedCornerShape(16.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
             if (isValid) {
@@ -434,7 +449,12 @@ fun ZombieEditSheetContent(
                     fontSize = 24.sp
                 )
             } else {
-                Icon(Icons.Default.ErrorOutline, null, tint = Color.Red, modifier = Modifier.size(32.dp))
+                Icon(
+                    Icons.Default.ErrorOutline,
+                    null,
+                    tint = Color.Red,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }
@@ -454,7 +474,11 @@ fun ZombieEditSheetContent(
                     .size(48.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .border(1.dp, if(isValid) Color.LightGray else Color.Red, RoundedCornerShape(16.dp)),
+                    .border(
+                        1.dp,
+                        if (isValid) Color.LightGray else Color.Red,
+                        RoundedCornerShape(16.dp)
+                    ),
                 filterQuality = FilterQuality.Medium,
                 placeholder = placeholderContent
             )
@@ -474,17 +498,26 @@ fun ZombieEditSheetContent(
                                 .background(Color(0xFFFF9800), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 4.dp, vertical = 1.dp)
                         ) {
-                            Text("自定义", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                "自定义",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                    }
-                    else if (isElite) {
+                    } else if (isElite) {
                         Spacer(Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .background(Color(0xFF673AB7), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 4.dp, vertical = 1.dp)
                         ) {
-                            Text("精英", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                "精英",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -585,10 +618,90 @@ fun ZombieEditSheetContent(
                 onValueChange(originalZombie.copy(row = if (newRow == 0) null else newRow))
             }
         )
+        if (compatibleCustomZombies.isNotEmpty() && onSelectExistingCustom != null) {
+            Button(
+                onClick = { showSwapDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFFF3E0), // 浅橙色背景区分
+                    contentColor = Color(0xFFEF6C00)
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 12.dp)
+            ) {
+                Icon(Icons.Default.SwapHoriz, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("切换至已定义的同类僵尸 (${compatibleCustomZombies.size})")
+            }
+        }
 
+        if (isCustom) {
+            Button(
+                onClick = { onEditCustom(originalZombie.type) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF3A244)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Build, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("编辑自定义属性数值")
+            }
+        } else {
+            Button(
+                onClick = { onInjectCustom(alias) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF3A244)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Build, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("注入为自定义僵尸")
+            }
+        }
         Spacer(Modifier.height(16.dp))
     }
+
+    if (showSwapDialog) {
+        AlertDialog(
+            onDismissRequest = { showSwapDialog = false },
+            title = { Text("选择自定义僵尸") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    Text("检测到关卡内已有基于 \"$displayName\" 的自定义僵尸，点击即可替换：", fontSize = 13.sp, color = Color.Gray)
+
+                    compatibleCustomZombies.forEach { (alias, rtid) ->
+                        Card(
+                            onClick = {
+                                onSelectExistingCustom?.invoke(rtid)
+                                showSwapDialog = false
+                            },
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(alias, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Spacer(Modifier.weight(1f))
+                                if (originalZombie.type == rtid) {
+                                    Text("当前使用", fontSize = 12.sp, color = Color(0xFF4CAF50))
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSwapDialog = false }) { Text("取消") }
+            }
+        )
+    }
 }
+
 @Composable
 fun StepperControl(
     label: String,

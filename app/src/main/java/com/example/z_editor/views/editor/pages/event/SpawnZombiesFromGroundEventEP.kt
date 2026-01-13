@@ -86,7 +86,9 @@ fun SpawnZombiesFromGroundEventEP(
     rootLevelFile: PvzLevelFile,
     onRequestZombieSelection: ((String) -> Unit) -> Unit,
     onRequestPlantSelection: ((String) -> Unit) -> Unit,
-    scrollState: LazyListState
+    scrollState: LazyListState,
+    onInjectZombie: (String) -> String?,
+    onEditCustomZombie: (String) -> Unit
 ) {
     val currentAlias = RtidParser.parse(rtid)?.alias ?: ""
     val focusManager = LocalFocusManager.current
@@ -179,9 +181,43 @@ fun SpawnZombiesFromGroundEventEP(
             onDismissRequest = { showBottomSheet = false; editingZombie = null },
             containerColor = Color.White
         ) {
+            val currentBaseType = remember(editingZombie!!.type) {
+                val rtidInfo = RtidParser.parse(editingZombie!!.type)
+                val alias = rtidInfo?.alias ?: editingZombie!!.type
+
+                val obj = objectMap[alias]
+                if (obj != null && obj.objClass == "ZombieType") {
+                    try {
+                        obj.objData.asJsonObject.get("TypeName").asString
+                    } catch (_: Exception) {
+                        ZombiePropertiesRepository.getTypeNameByAlias(alias)
+                    }
+                } else {
+                    ZombiePropertiesRepository.getTypeNameByAlias(alias)
+                }
+            }
+            val compatibleCustomZombies = remember(rootLevelFile.objects, currentBaseType) {
+                rootLevelFile.objects
+                    .filter { it.objClass == "ZombieType" }
+                    .mapNotNull { obj ->
+                        try {
+                            val json = obj.objData.asJsonObject
+                            if (json.has("TypeName") && json.get("TypeName").asString == currentBaseType) {
+                                val alias = obj.aliases?.firstOrNull() ?: "Unknown"
+                                val rtid = RtidParser.build(alias, "CurrentLevel")
+                                alias to rtid
+                            } else {
+                                null
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+            }
             ZombieEditSheetContent(
                 originalZombie = editingZombie!!,
                 objectMap = objectMap,
+                compatibleCustomZombies = compatibleCustomZombies,
                 onValueChange = { updatedZombie ->
                     val currentList = actionDataState.value.zombies.toMutableList()
                     val index = currentList.indexOf(editingZombie!!)
@@ -205,6 +241,37 @@ fun SpawnZombiesFromGroundEventEP(
                     sync(actionDataState.value.copy(zombies = currentList))
                     showBottomSheet = false
                     editingZombie = null
+                },
+                onInjectCustom = { oldAlias ->
+                    val newRtid = onInjectZombie(oldAlias)
+                    if (newRtid != null) {
+                        val updatedZombie = editingZombie!!.copy(type = newRtid)
+                        val currentList = actionDataState.value.zombies.toMutableList()
+                        val index = currentList.indexOf(editingZombie!!)
+                        if (index != -1) {
+                            currentList[index] = updatedZombie
+                            editingZombie = updatedZombie
+                            sync(actionDataState.value.copy(zombies = currentList))
+                            showBottomSheet = false
+                            editingZombie = null
+                            onBack()
+                        }
+                    }
+                },
+                onEditCustom = { rtid ->
+                    showBottomSheet = false
+                    editingZombie = null
+                    onEditCustomZombie(rtid)
+                },
+                onSelectExistingCustom = { selectedRtid ->
+                    val updatedZombie = editingZombie!!.copy(type = selectedRtid)
+                    val currentList = actionDataState.value.zombies.toMutableList()
+                    val index = currentList.indexOf(editingZombie!!)
+                    if (index != -1) {
+                        currentList[index] = updatedZombie
+                        editingZombie = updatedZombie
+                        sync(actionDataState.value.copy(zombies = currentList))
+                    }
                 }
             )
         }
@@ -440,7 +507,11 @@ fun SpawnZombiesFromGroundEventEP(
 
                             Button(
                                 onClick = { showBatchConfirmDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF936457)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(
+                                        0xFF936457
+                                    )
+                                ),
                                 contentPadding = PaddingValues(horizontal = 12.dp),
                                 modifier = Modifier.height(36.dp)
                             ) {

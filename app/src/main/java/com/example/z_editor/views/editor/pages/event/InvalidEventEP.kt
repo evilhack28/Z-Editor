@@ -49,7 +49,7 @@ import com.example.z_editor.views.editor.pages.others.HelpSection
 fun InvalidEventEP(
     rtid: String,
     waveIndex: Int,
-    onDeleteReference: (String) -> Unit, // 传入删除引用的回调
+    onDeleteReference: (String) -> Unit,
     onBack: () -> Unit,
     scrollState: ScrollState
 ) {

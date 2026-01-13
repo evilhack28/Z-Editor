@@ -1,7 +1,6 @@
 package com.example.z_editor.views.editor.pages.module
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,9 +69,8 @@ import com.example.z_editor.data.repository.GridItemRepository
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
-import com.google.gson.Gson
+import rememberJsonSync
 
-private val gson = Gson()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,28 +84,18 @@ fun InitialGridItemEntryEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // 1. 数据状态初始化
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, InitialGridItemEntryData::class.java)
-        } catch (_: Exception) {
-            InitialGridItemEntryData()
-        }
-        mutableStateOf(data)
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, InitialGridItemEntryData::class.java)
+    val moduleDataState = syncManager.dataState
+
+    fun sync() {
+        syncManager.sync()
     }
 
-    // 2. UI 交互状态
     var selectedX by remember { mutableIntStateOf(0) }
     var selectedY by remember { mutableIntStateOf(0) }
 
-    fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
-    }
 
-    // 3. 排序后的物品列表
     val sortedItems = remember(moduleDataState.value.placements) {
         moduleDataState.value.placements.sortedWith(compareBy({ it.gridY }, { it.gridX }))
     }

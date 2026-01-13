@@ -58,9 +58,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.StepperControl
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,26 +72,12 @@ fun FrostWindEventEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = RtidParser.parse(rtid)?.alias ?: "FrostWindEvent"
 
-    // 状态管理
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, FrostWindWaveActionPropsData::class.java)
-            } else {
-                FrostWindWaveActionPropsData()
-            }
-        } catch (_: Exception) {
-            FrostWindWaveActionPropsData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, FrostWindWaveActionPropsData::class.java)
+    val eventDataState = syncManager.dataState
 
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     val themeColor = Color(0xFF0288D1)
@@ -106,7 +90,13 @@ fun FrostWindEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text("事件类型：寒风侵袭", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },
@@ -153,24 +143,11 @@ fun FrostWindEventEP(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
-                onClick = {
-                    val newList = eventDataState.value.winds.toMutableList()
-                    newList.add(FrostWindData(row = 2, direction = "right"))
-                    eventDataState.value = eventDataState.value.copy(winds = newList)
-                    sync()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = themeColor)
-            ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
-                Text("添加寒风")
-            }
-
             if (eventDataState.value.winds.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("暂无寒风配置", color = Color.Gray)
@@ -195,6 +172,20 @@ fun FrostWindEventEP(
                         }
                     )
                 }
+            }
+            Button(
+                onClick = {
+                    val newList = eventDataState.value.winds.toMutableList()
+                    newList.add(FrostWindData(row = 2, direction = "right"))
+                    eventDataState.value = eventDataState.value.copy(winds = newList)
+                    sync()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = themeColor)
+            ) {
+                Icon(Icons.Default.Add, null)
+                Spacer(Modifier.width(8.dp))
+                Text("添加寒风")
             }
         }
     }

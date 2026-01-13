@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,10 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -43,9 +42,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,20 +56,12 @@ fun LastStandMinigamePropertiesEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val initialData = try {
-            gson.fromJson(obj?.objData, LastStandMinigamePropertiesData::class.java)
-        } catch (_: Exception) {
-            LastStandMinigamePropertiesData()
-        }
-        mutableStateOf(initialData)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, LastStandMinigamePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(
@@ -150,7 +139,8 @@ fun LastStandMinigamePropertiesEP(
                         color = Color(0xFF1976D2),
                         value = moduleDataState.value.startingPlantfood,
                         onValueChange = {
-                            moduleDataState.value = moduleDataState.value.copy(startingPlantfood = it)
+                            moduleDataState.value =
+                                moduleDataState.value.copy(startingPlantfood = it)
                             sync()
                         },
                         label = "初始能量豆 (StartingPlantfood)",

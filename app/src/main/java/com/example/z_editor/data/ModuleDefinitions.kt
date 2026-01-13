@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.MovieFilter
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Scoreboard
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Storm
@@ -65,6 +66,7 @@ sealed class EditorSubScreen {
     object ChallengeSelection : EditorSubScreen()
     object ToolSelection : EditorSubScreen()
     object ZombossSelection : EditorSubScreen()
+    data class CustomZombieProperties(val rtid: String) : EditorSubScreen()
     data class PlantSelection(val isMultiSelect: Boolean = false) : EditorSubScreen()
     data class ZombieSelection(val isMultiSelect: Boolean = false) : EditorSubScreen()
     data class EventSelection(val waveIndex: Int) : EditorSubScreen()
@@ -701,7 +703,7 @@ object ModuleRegistry {
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
         "VaseBreakerFlowModuleProperties" to ModuleMetadata(
-            title = "砸罐子流程",
+            title = "砸罐子动画",
             description = "控制砸罐子开始前罐子掉下来的动画",
             icon = Icons.AutoMirrored.Filled.NextPlan,
             isCore = false,
@@ -798,6 +800,17 @@ object ModuleRegistry {
             defaultSource = "CurrentLevel",
             initialDataFactory = { ZombieMoveFastModulePropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.ZombieMoveFastModule(rtid) }
+        ),
+        "LevelScoringModuleProperties" to ModuleMetadata(
+            title = "积分模块",
+            description = "启用积分模块，杀死僵尸获得分数",
+            icon = Icons.Default.Scoreboard,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "LevelScoring",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { LevelScoringData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
 
         "InitialPlantEntryProperties" to ModuleMetadata(

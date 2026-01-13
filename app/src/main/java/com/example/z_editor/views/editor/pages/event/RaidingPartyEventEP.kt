@@ -39,9 +39,7 @@ import com.example.z_editor.data.RaidingPartyEventData
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,20 +53,12 @@ fun RaidingPartyEventEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val initialData = try {
-            gson.fromJson(obj?.objData, RaidingPartyEventData::class.java)
-        } catch (_: Exception) {
-            RaidingPartyEventData()
-        }
-        mutableStateOf(initialData)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, RaidingPartyEventData::class.java)
+    val eventDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(
@@ -81,7 +71,13 @@ fun RaidingPartyEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text("事件类型：海盗登船", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },

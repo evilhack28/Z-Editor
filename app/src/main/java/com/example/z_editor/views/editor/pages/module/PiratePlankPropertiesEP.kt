@@ -53,9 +53,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.repository.ReferenceRepository
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,25 +73,12 @@ fun PiratePlankPropertiesEP(
         ReferenceRepository.init(context)
     }
 
-    val dataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, PiratePlankPropertiesData::class.java)
-            } else {
-                PiratePlankPropertiesData()
-            }
-        } catch (_: Exception) {
-            PiratePlankPropertiesData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, PiratePlankPropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(dataState.value)
-        }
+        syncManager.sync()
     }
 
     val stageModuleInfo = remember(levelDef.stageModule) {
@@ -108,9 +93,9 @@ fun PiratePlankPropertiesEP(
 
     val isPirateStage = stageObjClass == "PirateStageProperties"
 
-    val rowStates = remember(dataState.value.plankRows) {
+    val rowStates = remember(moduleDataState.value.plankRows) {
         (0..4).map { row ->
-            dataState.value.plankRows.contains(row)
+            moduleDataState.value.plankRows.contains(row)
         }
     }
 
@@ -237,7 +222,8 @@ fun PiratePlankPropertiesEP(
                             Switch(
                                 checked = rowStates[row],
                                 onCheckedChange = { checked ->
-                                    val currentRows = dataState.value.plankRows.toMutableList()
+                                    val currentRows =
+                                        moduleDataState.value.plankRows.toMutableList()
                                     if (checked) {
                                         if (!currentRows.contains(row)) {
                                             currentRows.add(row)
@@ -247,7 +233,8 @@ fun PiratePlankPropertiesEP(
                                     }
                                     // 保持排序
                                     currentRows.sort()
-                                    dataState.value = dataState.value.copy(plankRows = currentRows)
+                                    moduleDataState.value =
+                                        moduleDataState.value.copy(plankRows = currentRows)
                                     sync()
                                 },
                                 colors = SwitchDefaults.colors(
@@ -264,7 +251,7 @@ fun PiratePlankPropertiesEP(
             }
 
             // 显示当前选中的行
-            if (dataState.value.plankRows.isNotEmpty()) {
+            if (moduleDataState.value.plankRows.isNotEmpty()) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
                     modifier = Modifier.fillMaxWidth()
@@ -278,7 +265,7 @@ fun PiratePlankPropertiesEP(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            dataState.value.plankRows.joinToString(", ") { "第 ${it + 1} 行" },
+                            moduleDataState.value.plankRows.joinToString(", ") { "第 ${it + 1} 行" },
                             fontSize = 14.sp,
                             color = Color(0xFF795548)
                         )

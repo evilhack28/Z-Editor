@@ -24,10 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -42,9 +42,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,27 +56,12 @@ fun BlackHoleEventEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = RtidParser.parse(rtid)?.alias ?: "BlackHoleEvent"
 
-    // 状态管理
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, BlackHoleEventData::class.java)
-            } else {
-                BlackHoleEventData()
-            }
-        } catch (_: Exception) {
-            BlackHoleEventData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, BlackHoleEventData::class.java)
+    val eventDataState = syncManager.dataState
 
-    // 同步函数
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     val themeColor = Color(0xFF7C30D9)
@@ -91,7 +74,13 @@ fun BlackHoleEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text("事件类型：黑洞吸引", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },

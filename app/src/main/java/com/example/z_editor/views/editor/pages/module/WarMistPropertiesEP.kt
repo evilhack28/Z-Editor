@@ -39,9 +39,7 @@ import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.example.z_editor.views.editor.pages.others.StepperControl
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,20 +55,12 @@ fun WarMistPropertiesEP(
 
     val themeColor = Color(0xFF607D8B)
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val initialData = try {
-            gson.fromJson(obj?.objData, WarMistPropertiesData::class.java)
-        } catch (_: Exception) {
-            WarMistPropertiesData()
-        }
-        mutableStateOf(initialData)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, WarMistPropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
 
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     Scaffold(
@@ -147,14 +137,16 @@ fun WarMistPropertiesEP(
                         onMinus = {
                             val current = moduleDataState.value.initMistPosX
                             if (current > 0) {
-                                moduleDataState.value = moduleDataState.value.copy(initMistPosX = current - 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(initMistPosX = current - 1)
                                 sync()
                             }
                         },
                         onPlus = {
                             val current = moduleDataState.value.initMistPosX
                             if (current < 9) {
-                                moduleDataState.value = moduleDataState.value.copy(initMistPosX = current + 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(initMistPosX = current + 1)
                                 sync()
                             }
                         }
@@ -175,12 +167,15 @@ fun WarMistPropertiesEP(
                     NumberInputInt(
                         value = moduleDataState.value.bloverEffectInterval,
                         onValueChange = {
-                            moduleDataState.value = moduleDataState.value.copy(bloverEffectInterval = it)
+                            moduleDataState.value =
+                                moduleDataState.value.copy(bloverEffectInterval = it)
                             sync()
                         },
                         label = "三叶草吹散后恢复秒数",
                         color = themeColor,
-                        modifier = Modifier.padding(top = 12.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
                     )
                 }
             }

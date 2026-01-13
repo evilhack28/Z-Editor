@@ -43,12 +43,14 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.WaveManagerData
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WaveManagerPropertiesEP(
-    waveManager: WaveManagerData,
+    rootLevelFile: PvzLevelFile,
     hasConveyor: Boolean,
     onBack: () -> Unit,
     scrollState: ScrollState
@@ -56,15 +58,23 @@ fun WaveManagerPropertiesEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // --- 状态绑定 ---
-    var flagInterval by remember { mutableStateOf(waveManager.flagWaveInterval.toString()) }
-    var maxHealth by remember { mutableStateOf(waveManager.maxNextWaveHealthPercentage.toString()) }
-    var minHealth by remember { mutableStateOf(waveManager.minNextWaveHealthPercentage.toString()) }
+    // [SyncManager] 初始化
+    val obj = remember(rootLevelFile) {
+        rootLevelFile.objects.find { it.objClass == "WaveManagerProperties" }
+    }
+    val syncManager = rememberJsonSync(obj, WaveManagerData::class.java)
+    var waveManager by syncManager.dataState
 
-    // SuppressFlagZombie
-    var suppressFlag by remember { mutableStateOf(waveManager.suppressFlagZombie == true) }
+    fun sync() {
+        syncManager.sync()
+    }
 
-    // LevelJam
+    // --- 状态绑定 (需要 String 转换的字段) ---
+    var flagInterval by remember(waveManager.flagWaveInterval) { mutableStateOf(waveManager.flagWaveInterval.toString()) }
+    var maxHealth by remember(waveManager.maxNextWaveHealthPercentage) { mutableStateOf(waveManager.maxNextWaveHealthPercentage.toString()) }
+    var minHealth by remember(waveManager.minNextWaveHealthPercentage) { mutableStateOf(waveManager.minNextWaveHealthPercentage.toString()) }
+
+    // LevelJam 下拉框状态
     var jamExpanded by remember { mutableStateOf(false) }
     val jamOptions = listOf(
         null to "默认/无 (None)",
@@ -74,36 +84,44 @@ fun WaveManagerPropertiesEP(
         "jam_punk" to "朋克 (Punk)",
         "jam_8bit" to "街机 (8-Bit)"
     )
-    var selectedJamCode by remember { mutableStateOf(waveManager.levelJam) }
     val selectedJamLabel =
-        jamOptions.find { it.first == selectedJamCode }?.second ?: "默认/无 (None)"
+        jamOptions.find { it.first == waveManager.levelJam }?.second ?: "默认/无 (None)"
 
-    // === 新增：时间控制相关 ===
-
+    // === 时间控制相关 ===
     val defaultFirstWaveSecs = if (hasConveyor) 5 else 12
     val currentFirstWaveVal = if (hasConveyor) {
         waveManager.zombieCountDownFirstWaveConveyorSecs ?: defaultFirstWaveSecs
     } else {
         waveManager.zombieCountDownFirstWaveSecs ?: defaultFirstWaveSecs
     }
-    var firstWaveInput by remember { mutableStateOf(currentFirstWaveVal.toString()) }
+    var firstWaveInput by remember(currentFirstWaveVal) { mutableStateOf(currentFirstWaveVal.toString()) }
 
     val defaultHugeDelay = 5
     val currentHugeDelayVal = waveManager.zombieCountDownHugeWaveDelay ?: defaultHugeDelay
-    var hugeWaveInput by remember { mutableStateOf(currentHugeDelayVal.toString()) }
+    var hugeWaveInput by remember(currentHugeDelayVal) { mutableStateOf(currentHugeDelayVal.toString()) }
 
-    fun saveTimeSettings() {
-        val inputFirst = firstWaveInput.toIntOrNull() ?: defaultFirstWaveSecs
+    // 保存时间设置的逻辑
+    fun saveTimeSettings(firstValStr: String, hugeValStr: String) {
+        val inputFirst = firstValStr.toIntOrNull() ?: defaultFirstWaveSecs
+        val inputHuge = hugeValStr.toIntOrNull() ?: defaultHugeDelay
+
+        var newMgr = waveManager
         if (hasConveyor) {
-            waveManager.zombieCountDownFirstWaveConveyorSecs =
-                if (inputFirst == 5) null else inputFirst
-            waveManager.zombieCountDownFirstWaveSecs = null
+            newMgr = newMgr.copy(
+                zombieCountDownFirstWaveConveyorSecs = if (inputFirst == 5) null else inputFirst,
+                zombieCountDownFirstWaveSecs = null
+            )
         } else {
-            waveManager.zombieCountDownFirstWaveSecs = if (inputFirst == 12) null else inputFirst
-            waveManager.zombieCountDownFirstWaveConveyorSecs = null
+            newMgr = newMgr.copy(
+                zombieCountDownFirstWaveSecs = if (inputFirst == 12) null else inputFirst,
+                zombieCountDownFirstWaveConveyorSecs = null
+            )
         }
-        val inputHuge = hugeWaveInput.toIntOrNull() ?: defaultHugeDelay
-        waveManager.zombieCountDownHugeWaveDelay = if (inputHuge == 5) null else inputHuge
+        newMgr = newMgr.copy(
+            zombieCountDownHugeWaveDelay = if (inputHuge == 5) null else inputHuge
+        )
+        waveManager = newMgr
+        sync()
     }
 
     Scaffold(
@@ -112,7 +130,13 @@ fun WaveManagerPropertiesEP(
         },
         topBar = {
             TopAppBar(
-                title = { Text("波次事件参数配置", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                title = {
+                    Text(
+                        "波次事件参数配置",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -163,7 +187,6 @@ fun WaveManagerPropertiesEP(
                 )
             }
         }
-
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -183,7 +206,11 @@ fun WaveManagerPropertiesEP(
                 value = flagInterval,
                 onValueChange = {
                     flagInterval = it
-                    waveManager.flagWaveInterval = it.toIntOrNull() ?: waveManager.flagWaveInterval
+                    val num = it.toIntOrNull()
+                    if (num != null) {
+                        waveManager = waveManager.copy(flagWaveInterval = num)
+                        sync()
+                    }
                 },
                 label = { Text("旗帜间隔 (FlagWaveInterval)") },
                 modifier = Modifier.fillMaxWidth(),
@@ -208,7 +235,8 @@ fun WaveManagerPropertiesEP(
                         maxHealth = str
                         val v = str.toDoubleOrNull()
                         if (v != null && v in 0.0..1.0) {
-                            waveManager.maxNextWaveHealthPercentage = v
+                            waveManager = waveManager.copy(maxNextWaveHealthPercentage = v)
+                            sync()
                         }
                     },
                     label = { Text("最大刷新血线") },
@@ -226,7 +254,8 @@ fun WaveManagerPropertiesEP(
                         minHealth = str
                         val v = str.toDoubleOrNull()
                         if (v != null && v in 0.0..1.0) {
-                            waveManager.minNextWaveHealthPercentage = v
+                            waveManager = waveManager.copy(minNextWaveHealthPercentage = v)
+                            sync()
                         }
                     },
                     label = { Text("最小刷新血线") },
@@ -252,7 +281,7 @@ fun WaveManagerPropertiesEP(
                     value = firstWaveInput,
                     onValueChange = {
                         firstWaveInput = it
-                        saveTimeSettings()
+                        saveTimeSettings(it, hugeWaveInput)
                     },
                     label = {
                         Text(if (hasConveyor) "首波延迟 (传送带)" else "首波延迟 (普通)")
@@ -265,7 +294,7 @@ fun WaveManagerPropertiesEP(
                     value = hugeWaveInput,
                     onValueChange = {
                         hugeWaveInput = it
-                        saveTimeSettings()
+                        saveTimeSettings(firstWaveInput, it)
                     },
                     label = { Text("旗帜波延迟") },
                     modifier = Modifier.weight(1f),
@@ -301,10 +330,11 @@ fun WaveManagerPropertiesEP(
                         Text("SuppressFlagZombie", fontSize = 12.sp, color = Color.Gray)
                     }
                     Switch(
-                        checked = suppressFlag,
+                        checked = waveManager.suppressFlagZombie == true,
                         onCheckedChange = { isChecked ->
-                            suppressFlag = isChecked
-                            waveManager.suppressFlagZombie = if (isChecked) true else null
+                            waveManager =
+                                waveManager.copy(suppressFlagZombie = if (isChecked) true else null)
+                            sync()
                         }
                     )
                 }
@@ -342,8 +372,8 @@ fun WaveManagerPropertiesEP(
                         DropdownMenuItem(
                             text = { Text(label) },
                             onClick = {
-                                selectedJamCode = code
-                                waveManager.levelJam = code
+                                waveManager = waveManager.copy(levelJam = code)
+                                sync()
                                 jamExpanded = false
                             },
                             contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding

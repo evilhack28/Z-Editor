@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,19 +35,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.GppBad
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -88,11 +97,21 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.WaveManagerData
 import com.example.z_editor.data.WaveManagerModuleData
 import com.example.z_editor.data.WavePointAnalysis
+import com.example.z_editor.data.repository.ZombiePropertiesRepository
 import com.example.z_editor.data.repository.ZombieRepository
 import com.example.z_editor.data.repository.ZombieTag
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EventChip
 import com.example.z_editor.views.editor.pages.others.SettingEntryCard
+
+data class ZombieUsageInfo(
+    val rtid: String,
+    val alias: String,
+    val baseTypeName: String,
+    val locations: List<String>
+) {
+    val isUnused: Boolean get() = locations.isEmpty()
+}
 
 /**
  * 波次时间轴 Tab 页面内容
@@ -113,7 +132,9 @@ fun WaveTimelineTab(
     onNavigateToAddEvent: (Int) -> Unit,
     onWavesChanged: () -> Unit,
     onCreateContainer: () -> Unit,
-    onDeleteContainer: () -> Unit
+    onDeleteContainer: () -> Unit,
+    parsedData: ParsedLevelData?,
+    onEditCustomZombie: (String) -> Unit
 ) {
     if (waveManager == null) {
         Box(
@@ -181,6 +202,67 @@ fun WaveTimelineTab(
     var moveTargetInput by remember { mutableStateOf("") }
 
     val interval = if (waveManager.flagWaveInterval <= 0) 10 else waveManager.flagWaveInterval
+
+
+    val customZombies = remember(rootLevelFile?.objects, refreshTrigger) {
+        rootLevelFile?.objects?.filter {
+            it.objClass == "ZombieType"
+        } ?: emptyList()
+    }
+
+    val customZombieUsageList = remember(customZombies, waveManager, refreshTrigger) {
+        customZombies.map { typeObj ->
+            val alias = typeObj.aliases?.firstOrNull() ?: "Unknown"
+            val rtid = RtidParser.build(alias, "CurrentLevel")
+            var baseType = "unknown"
+            try {
+                val json = typeObj.objData.asJsonObject
+                if (json.has("TypeName")) {
+                    baseType = json.get("TypeName").asString
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+
+            val locations = mutableListOf<String>()
+
+            waveManager.waves.forEachIndexed { index, waveEvents ->
+                waveEvents.forEach { eventRtid ->
+                    val eventAlias = RtidParser.parse(eventRtid)?.alias
+                    val eventObj = objectMap[eventAlias]
+                    if (eventObj != null && eventObj.objData.toString().contains(rtid)) {
+                        locations.add("第 ${index + 1} 波")
+                    }
+                }
+            }
+            ZombieUsageInfo(rtid, alias, baseType, locations.distinct())
+        }
+    }
+
+    val zombieReferenceCounts = remember(customZombies, parsedData, refreshTrigger) {
+        val counts = mutableMapOf<String, Int>()
+
+        customZombies.forEach { obj ->
+            obj.aliases?.firstOrNull()?.let { alias ->
+                val rtid = RtidParser.build(alias, "CurrentLevel")
+                counts[rtid] = 0
+            }
+        }
+
+        waveManager.waves.flatten().forEach { eventRtid ->
+            val eventAlias = RtidParser.parse(eventRtid)?.alias
+            val eventObj = objectMap[eventAlias]
+            if (eventObj != null) {
+                val jsonStr = eventObj.objData.toString()
+                counts.keys.forEach { zombieRtid ->
+                    if (jsonStr.contains(zombieRtid)) {
+                        counts[zombieRtid] = (counts[zombieRtid] ?: 0) + 1
+                    }
+                }
+            }
+        }
+        counts
+    }
+    val unusedZombies = zombieReferenceCounts.filter { it.value == 0 }.keys
+    val activeZombies = zombieReferenceCounts.filter { it.value > 0 }.keys
 
     // ======================== 2. 核心业务逻辑 ========================
 
@@ -269,6 +351,65 @@ fun WaveTimelineTab(
             !objectMap.containsKey(LevelParser.extractAlias(rtid))
         }
     }
+
+    // 清除僵尸引用
+    fun cleanUnusedZombies() {
+        if (rootLevelFile == null) return
+        var deletedCount = 0
+        unusedZombies.forEach { zombieRtid ->
+            val alias = RtidParser.parse(zombieRtid)?.alias ?: return@forEach
+
+            val typeObj = rootLevelFile.objects.find { it.aliases?.contains(alias) == true }
+            if (typeObj != null) {
+                try {
+                    val typeJson = typeObj.objData.asJsonObject
+                    if (typeJson.has("Properties")) {
+                        val propsRtid = typeJson.get("Properties").asString
+                        val propsAlias = RtidParser.parse(propsRtid)?.alias
+                        if (propsAlias != null && RtidParser.parse(propsRtid)?.source == "CurrentLevel") {
+                            rootLevelFile.objects.removeAll { it.aliases?.contains(propsAlias) == true }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                rootLevelFile.objects.remove(typeObj)
+                deletedCount++
+            }
+        }
+        if (deletedCount > 0) {
+            Toast.makeText(context, "清理了 $deletedCount 个闲置僵尸数据", Toast.LENGTH_SHORT)
+                .show()
+            onWavesChanged()
+        }
+    }
+
+    fun deleteCustomZombie(info: ZombieUsageInfo) {
+        if (rootLevelFile == null) return
+        val typeObj = rootLevelFile.objects.find { it.aliases?.contains(info.alias) == true }
+        if (typeObj != null) {
+            try {
+                val typeJson = typeObj.objData.asJsonObject
+                if (typeJson.has("Properties")) {
+                    val propsRtid = typeJson.get("Properties").asString
+                    val propsInfo = RtidParser.parse(propsRtid)
+
+                    if (propsInfo?.source == "CurrentLevel") {
+                        rootLevelFile.objects.removeAll { it.aliases?.contains(propsInfo.alias) == true }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            rootLevelFile.objects.remove(typeObj)
+
+            onWavesChanged()
+            Toast.makeText(context, "已删除 ${info.alias} 及其属性数据", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    var selectedZombieInfo by remember { mutableStateOf<ZombieUsageInfo?>(null) }
 
     // ======================== 3. 弹窗与交互组件 ========================
 
@@ -667,23 +808,32 @@ fun WaveTimelineTab(
         val waveIdx = editingWaveIndex!!
         val currentWaveEvents = waveManager.waves.getOrNull(waveIdx - 1) ?: mutableListOf()
         ModalBottomSheet(onDismissRequest = { editingWaveIndex = null }) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
-                    .padding(16.dp)
                     .fillMaxWidth()
-                    .navigationBarsPadding()
+                    .navigationBarsPadding(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("第 $waveIdx 波事件管理", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {
-                        editingWaveIndex = null; onNavigateToAddEvent(waveIdx)
-                    }) {
-                        Icon(Icons.Default.Add, null); Text("新增事件")
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            "第 $waveIdx 波事件管理",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = {
+                            editingWaveIndex = null; onNavigateToAddEvent(waveIdx)
+                        }) {
+                            Icon(Icons.Default.Add, null); Text("新增事件")
+                        }
                     }
                 }
-                Spacer(Modifier.height(16.dp))
-                currentWaveEvents.forEachIndexed { index, rtid ->
+                itemsIndexed(currentWaveEvents) { index, rtid ->
                     val alias = LevelParser.extractAlias(rtid)
                     val obj = objectMap[alias]
 
@@ -713,7 +863,9 @@ fun WaveTimelineTab(
                         }
                     )
                 }
-                Spacer(Modifier.height(32.dp))
+                item {
+                    Spacer(Modifier.height(32.dp))
+                }
             }
         }
     }
@@ -741,18 +893,108 @@ fun WaveTimelineTab(
         )
     }
 
+    if (selectedZombieInfo != null) {
+        val info = selectedZombieInfo!!
+        val realTypeName = ZombiePropertiesRepository.getTypeNameByAlias(info.baseTypeName)
+        val displayName = ZombieRepository.getName(realTypeName)
+        val iconInfo = ZombieRepository.search(realTypeName, ZombieTag.All).firstOrNull()
+
+        val placeholderContent = @Composable {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFEEEEEE), RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = displayName.take(1).uppercase(),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    fontSize = 24.sp
+                )
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { selectedZombieInfo = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
+                            .background(Color.LightGray)
+                    ) {
+                        AssetImage(
+                            path = if (iconInfo?.icon != null) "images/zombies/${iconInfo.icon}" else null,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            filterQuality = FilterQuality.Medium,
+                            placeholder = placeholderContent
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.fillMaxWidth()){
+                        Text(info.alias, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("原型: $displayName", fontSize = 14.sp, color = Color.Gray)
+                    }
+                }
+            },
+            text = {
+                Column {
+                    if (info.isUnused) {
+                        Text("此自定义僵尸当前未被任何波次或模块使用", color = Color.Gray, fontSize = 14.sp)
+                    } else {
+                        Text("出现位置:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text(info.locations.joinToString(", "), color = Color.Gray, fontSize = 14.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        selectedZombieInfo = null
+                        onEditCustomZombie(info.rtid)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                ) {
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("编辑属性")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        deleteCustomZombie(info)
+                        selectedZombieInfo = null
+                    },
+                    enabled = info.isUnused,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.Red)
+                ) {
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("删除实体")
+                }
+            }
+        )
+    }
 
     // ======================== 4. 主界面布局 ========================
 
     LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        contentPadding = PaddingValues(bottom = 80.dp),
     ) {
         item {
             Card(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
                     .fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
                 border = BorderStroke(1.dp, Color(0xFF1976D2))
@@ -784,7 +1026,7 @@ fun WaveTimelineTab(
             item {
                 Card(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
                     border = BorderStroke(1.dp, Color.Red)
@@ -802,15 +1044,15 @@ fun WaveTimelineTab(
                             fontWeight = FontWeight.Bold
                         )
                         }
-                        deadLinks.forEach { Text(it, fontSize = 12.sp, color = Color.Red) }
+                        Spacer(Modifier.height(8.dp))
+
+                        deadLinks.forEach { Text(it, fontSize = 14.sp, color = Color.Red) }
+
+                        Spacer(Modifier.height(8.dp))
                         Button(
                             onClick = {
                                 waveManager.waves.forEach {
-                                    it.removeAll { r ->
-                                        deadLinks.contains(
-                                            r
-                                        )
-                                    }
+                                    it.removeAll { r -> deadLinks.contains(r) }
                                 }; onWavesChanged()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
@@ -820,6 +1062,64 @@ fun WaveTimelineTab(
                 }
             }
         }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF3E3)),
+                border = BorderStroke(1.dp, Color(0xFFFF9800)),
+                elevation = CardDefaults.cardElevation(1.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Science, null, tint = Color(0xFFFF9800))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "自定义僵尸管理",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFFFF9800)
+                        )
+                        Spacer(Modifier.weight(1f))
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    if (activeZombies.isEmpty() && unusedZombies.isEmpty()) {
+                        Text("暂无自定义僵尸数据", fontSize = 12.sp, color = Color.Gray)
+                    } else {
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            customZombieUsageList.forEach { info ->
+                                AssistChip(
+                                    onClick = { selectedZombieInfo = info },
+                                    label = { Text(info.alias) },
+                                    leadingIcon = {
+                                        if (info.isUnused) {
+                                            Icon(Icons.Default.Warning, null, tint = Color(0xFFFF9800), modifier = Modifier.size(16.dp))
+                                        } else {
+                                            Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
+                                        }
+                                    },
+                                    border = null,
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = if (info.isUnused) Color(0xFFFFF3E0) else Color(0xFFF1F8E9),
+                                        labelColor = if (info.isUnused) Color(0xFFEF6C00) else Color(0xFF33691E)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item { Spacer(Modifier.height(16.dp)) }
 
         item {
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -904,7 +1204,6 @@ fun WaveTimelineTab(
                     )
                 }
             }
-
 
             itemsIndexed(
                 items = waveManager.waves,

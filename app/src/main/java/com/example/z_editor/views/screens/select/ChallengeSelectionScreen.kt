@@ -145,12 +145,11 @@ fun ChallengeSelectionCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 图标区域
             Box(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFFECB3)) // 浅琥珀色
+                    .background(Color(0xFFFFECB3))
                     .border(1.dp, Color(0xFFE8A000), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {

@@ -71,9 +71,7 @@ import com.example.z_editor.data.repository.GridItemRepository
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,23 +87,15 @@ fun ZombiePotionActionPropsEP(
 
     val themeColor = Color(0xFF607D8B)
 
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, ZombiePotionActionPropsData::class.java)
-        } catch (_: Exception) {
-            ZombiePotionActionPropsData()
-        }
-        mutableStateOf(data)
-    }
-
     var selectedX by remember { mutableIntStateOf(0) }
     var selectedY by remember { mutableIntStateOf(0) }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, ZombiePotionActionPropsData::class.java)
+    val eventDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     val sortedItems = remember(eventDataState.value.potions) {
@@ -165,16 +155,23 @@ fun ZombiePotionActionPropsEP(
             detectTapGestures(onTap = { focusManager.clearFocus() })
         },
         topBar = {
-            TopAppBar(title = {
-                Column {
-                    Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "事件类型：药水投放",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Normal
-                    )
-                }
-            },
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "事件类型：药水投放",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
@@ -267,10 +264,12 @@ fun ZombiePotionActionPropsEP(
                                     for (row in 0..4) {
                                         Row(Modifier.weight(1f)) {
                                             for (col in 0..8) {
-                                                val isSelected = (row == selectedY && col == selectedX)
-                                                val cellItems = eventDataState.value.potions.filter {
-                                                    it.location.x == col && it.location.y == row
-                                                }
+                                                val isSelected =
+                                                    (row == selectedY && col == selectedX)
+                                                val cellItems =
+                                                    eventDataState.value.potions.filter {
+                                                        it.location.x == col && it.location.y == row
+                                                    }
                                                 val count = cellItems.size
                                                 val firstItem = cellItems.firstOrNull()
 
@@ -280,7 +279,9 @@ fun ZombiePotionActionPropsEP(
                                                         .fillMaxHeight()
                                                         .border(0.5.dp, Color(0xFF9DA0DB))
                                                         .background(
-                                                            if (isSelected) Color(0xFFEBF13E).copy(alpha = 0.5f)
+                                                            if (isSelected) Color(0xFFEBF13E).copy(
+                                                                alpha = 0.5f
+                                                            )
                                                             else Color.Transparent
                                                         )
                                                         .clickable {
@@ -297,7 +298,9 @@ fun ZombiePotionActionPropsEP(
                                                                     .align(Alignment.TopEnd)
                                                                     .background(
                                                                         color = Color.Gray,
-                                                                        shape = RoundedCornerShape(bottomStart = 4.dp)
+                                                                        shape = RoundedCornerShape(
+                                                                            bottomStart = 4.dp
+                                                                        )
                                                                     )
                                                                     .padding(horizontal = 2.dp)
                                                             ) {
@@ -358,13 +361,17 @@ fun PotionIconSmall(typeName: String) {
         AssetImage(
             path = iconPath,
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(0.9f).clip(cardShape),
+            modifier = Modifier
+                .fillMaxSize(0.9f)
+                .clip(cardShape),
             contentScale = ContentScale.Fit,
             filterQuality = FilterQuality.Low
         )
     } else {
         Box(
-            modifier = Modifier.fillMaxSize(0.8f).background(Color(0xFF3A47B7), cardShape),
+            modifier = Modifier
+                .fillMaxSize(0.8f)
+                .background(Color(0xFF3A47B7), cardShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -416,11 +423,15 @@ fun PotionItemCard(
                 AssetImage(
                     path = GridItemRepository.getIconPath(item.type),
                     contentDescription = item.type,
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).size(36.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .size(36.dp),
                     filterQuality = FilterQuality.Medium,
                     placeholder = {
                         Box(
-                            modifier = Modifier.fillMaxSize().background(Color(0xFFEFEFF8)),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFEFEFF8)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(

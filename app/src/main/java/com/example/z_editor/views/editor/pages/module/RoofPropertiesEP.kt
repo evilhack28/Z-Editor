@@ -4,15 +4,41 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,15 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.LevelDefinitionData
 import com.example.z_editor.data.PvzLevelFile
-import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.RoofPropertiesData
+import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.repository.ReferenceRepository
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.StepperControl
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,37 +83,24 @@ fun RoofPropertiesEP(
 
     val isRoofStage = stageObjClass == "RoofStageProperties"
 
-
     val themeColor = Color(0xFF8D6E63)
 
-    val dataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, RoofPropertiesData::class.java)
-            } else {
-                RoofPropertiesData()
-            }
-        } catch (_: Exception) {
-            RoofPropertiesData()
-        }
-        mutableStateOf(data)
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, RoofPropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
+
+    fun sync() {
+        syncManager.sync()
     }
 
-    val data = dataState.value
+    val data = moduleDataState.value
 
     val minCol = data.flowerPotStartColumn
     val maxCol = data.flowerPotEndColumn
 
-    fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(dataState.value)
-        }
-    }
 
-    val startCol = dataState.value.flowerPotStartColumn
-    val endCol = dataState.value.flowerPotEndColumn
+    val startCol = moduleDataState.value.flowerPotStartColumn
+    val endCol = moduleDataState.value.flowerPotEndColumn
 
     val hasFlowerPot: (Int) -> Boolean = remember(startCol, endCol) {
         { col: Int ->
@@ -189,7 +200,10 @@ fun RoofPropertiesEP(
                 elevation = CardDefaults.cardElevation(2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text(
                         text = "花盆范围设置",
                         style = MaterialTheme.typography.titleMedium,
@@ -200,18 +214,20 @@ fun RoofPropertiesEP(
 
                     StepperControl(
                         label = "起始列 (StartColumn)",
-                        valueText = "${dataState.value.flowerPotStartColumn}",
+                        valueText = "${moduleDataState.value.flowerPotStartColumn}",
                         onMinus = {
-                            val current = dataState.value.flowerPotStartColumn
+                            val current = moduleDataState.value.flowerPotStartColumn
                             if (current > 0) {
-                                dataState.value = dataState.value.copy(flowerPotStartColumn = current - 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(flowerPotStartColumn = current - 1)
                                 sync()
                             }
                         },
                         onPlus = {
-                            val current = dataState.value.flowerPotStartColumn
+                            val current = moduleDataState.value.flowerPotStartColumn
                             if (minCol < maxCol) {
-                                dataState.value = dataState.value.copy(flowerPotStartColumn = current + 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(flowerPotStartColumn = current + 1)
                                 sync()
                             }
                         }
@@ -219,18 +235,20 @@ fun RoofPropertiesEP(
 
                     StepperControl(
                         label = "终止列 (EndColumn)",
-                        valueText = "${dataState.value.flowerPotEndColumn}",
+                        valueText = "${moduleDataState.value.flowerPotEndColumn}",
                         onMinus = {
-                            val current = dataState.value.flowerPotEndColumn
+                            val current = moduleDataState.value.flowerPotEndColumn
                             if (minCol < maxCol) {
-                                dataState.value = dataState.value.copy(flowerPotEndColumn = current - 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(flowerPotEndColumn = current - 1)
                                 sync()
                             }
                         },
                         onPlus = {
-                            val current = dataState.value.flowerPotEndColumn
+                            val current = moduleDataState.value.flowerPotEndColumn
                             if (current < 8) {
-                                dataState.value = dataState.value.copy(flowerPotEndColumn = current + 1)
+                                moduleDataState.value =
+                                    moduleDataState.value.copy(flowerPotEndColumn = current + 1)
                                 sync()
                             }
                         }

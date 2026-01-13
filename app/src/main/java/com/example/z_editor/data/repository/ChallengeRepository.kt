@@ -15,6 +15,7 @@ import com.example.z_editor.data.StarChallengeSpendSunHoldoutData
 import com.example.z_editor.data.StarChallengeSunProducedData
 import com.example.z_editor.data.StarChallengeSunReducedData
 import com.example.z_editor.data.StarChallengeSunUsedData
+import com.example.z_editor.data.StarChallengeTargetScoreData
 import com.example.z_editor.data.StarChallengeUnfreezePlantsData
 import com.example.z_editor.data.StarChallengeZombieDistanceData
 import com.example.z_editor.data.StarChallengeZombieSpeedData
@@ -30,7 +31,6 @@ data class ChallengeTypeInfo(
 )
 
 object ChallengeRepository {
-
     private val allChallenges = listOf(
         ChallengeTypeInfo(
             title = "关卡提示文字",
@@ -151,6 +151,14 @@ object ChallengeRepository {
             description = "吹飞一定数量的僵尸",
             icon = Icons.Default.Air,
             initialDataFactory = { StarChallengeBlowZombieData() }
+        ),
+        ChallengeTypeInfo(
+            title = "获取积分挑战",
+            objClass = "StarChallengeTargetScoreProps",
+            defaultAlias = "ReachTheScore",
+            description = "获取目标积分，需要开启关卡计分模块",
+            icon = Icons.Default.Scoreboard,
+            initialDataFactory = { StarChallengeTargetScoreData() }
         ),
     )
 

@@ -55,9 +55,7 @@ import com.example.z_editor.data.TidalChangeWaveActionData
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,25 +69,12 @@ fun TidalChangeEventEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = RtidParser.parse(rtid)?.alias ?: "TidalChangeEvent"
 
-    val actionDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, TidalChangeWaveActionData::class.java)
-            } else {
-                TidalChangeWaveActionData()
-            }
-        } catch (_: Exception) {
-            TidalChangeWaveActionData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, TidalChangeWaveActionData::class.java)
+    val actionDataState = syncManager.dataState
 
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(actionDataState.value)
-        }
+        syncManager.sync()
     }
 
     val changeAmount = actionDataState.value.tidalChange.changeAmount
@@ -113,7 +98,13 @@ fun TidalChangeEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             "事件类型：潮水变更",
                             fontSize = 15.sp,

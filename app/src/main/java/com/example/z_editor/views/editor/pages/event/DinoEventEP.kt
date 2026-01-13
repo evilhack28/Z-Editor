@@ -61,9 +61,7 @@ import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.example.z_editor.views.editor.pages.others.StepperControl
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,25 +75,12 @@ fun DinoEventEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val currentAlias = RtidParser.parse(rtid)?.alias ?: "DinoWaveEvent"
 
-    val eventDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            if (obj != null) {
-                gson.fromJson(obj.objData, DinoWaveActionPropsData::class.java)
-            } else {
-                DinoWaveActionPropsData()
-            }
-        } catch (_: Exception) {
-            DinoWaveActionPropsData()
-        }
-        mutableStateOf(data)
-    }
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, DinoWaveActionPropsData::class.java)
+    val eventDataState = syncManager.dataState
 
     fun sync() {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        if (obj != null) {
-            obj.objData = gson.toJsonTree(eventDataState.value)
-        }
+        syncManager.sync()
     }
 
     val themeColor = Color(0xFF91B900)
@@ -118,7 +103,13 @@ fun DinoEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text("事件类型：恐龙召唤", fontSize = 15.sp, fontWeight = FontWeight.Normal)
                     }
                 },
@@ -179,7 +170,12 @@ fun DinoEventEP(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Pets, null, tint = themeColor)
                         Spacer(Modifier.width(8.dp))
-                        Text("恐龙种类 (DinoType)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = themeColor)
+                        Text(
+                            "恐龙种类 (DinoType)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = themeColor
+                        )
                     }
                     Spacer(Modifier.height(16.dp))
 
@@ -192,8 +188,9 @@ fun DinoEventEP(
                         onExpandedChange = { dinoExpanded = !dinoExpanded },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val selectedLabel = dinoOptions.find { it.first == eventDataState.value.dinoType }?.second
-                            ?: eventDataState.value.dinoType
+                        val selectedLabel =
+                            dinoOptions.find { it.first == eventDataState.value.dinoType }?.second
+                                ?: eventDataState.value.dinoType
 
                         OutlinedTextField(
                             value = selectedLabel,
@@ -216,7 +213,8 @@ fun DinoEventEP(
                                 DropdownMenuItem(
                                     text = { Text(label) },
                                     onClick = {
-                                        eventDataState.value = eventDataState.value.copy(dinoType = code)
+                                        eventDataState.value =
+                                            eventDataState.value.copy(dinoType = code)
                                         sync()
                                         dinoExpanded = false
                                     },
@@ -278,7 +276,12 @@ fun DinoEventEP(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("位置与持续时间", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = themeColor)
+                    Text(
+                        "位置与持续时间",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = themeColor
+                    )
                     Spacer(Modifier.height(16.dp))
 
                     StepperControl(

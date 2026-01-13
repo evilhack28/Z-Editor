@@ -147228,7 +147228,7 @@
 					"z": 1.4
 				},
 				"SizeType": "small",
-				"Speed": 0.5,
+				"Speed": 0.185,
 				"WavePointCost": 100,
 				"Weight": 1000,
 				"ZombieStats": [

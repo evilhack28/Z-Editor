@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.BeachStageEventData
+import com.example.z_editor.data.ParachuteRainEventData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.repository.ZombiePropertiesRepository
@@ -39,6 +40,7 @@ import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
 import com.google.gson.Gson
+import rememberJsonSync
 
 private val gson = Gson()
 
@@ -55,22 +57,14 @@ fun BeachStageEventEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    // 数据状态管理
-    val actionDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, BeachStageEventData::class.java)
-        } catch (_: Exception) {
-            BeachStageEventData()
-        }
-        mutableStateOf(data)
-    }
+
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, BeachStageEventData::class.java)
+    val actionDataState = syncManager.dataState
 
     fun sync(newData: BeachStageEventData) {
         actionDataState.value = newData
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(newData)
-        }
+        syncManager.sync()
     }
 
     val currentZombieInfo = remember(actionDataState.value.zombieName) {

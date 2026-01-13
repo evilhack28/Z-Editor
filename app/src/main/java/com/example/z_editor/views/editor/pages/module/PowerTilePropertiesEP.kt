@@ -63,9 +63,7 @@ import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputDouble
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 enum class PowerTileGroup(
     val value: String,
@@ -91,26 +89,18 @@ fun PowerTilePropertiesEP(
     var showHelpDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    val moduleDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, PowerTilePropertiesData::class.java)
-        } catch (_: Exception) {
-            PowerTilePropertiesData()
-        }
-        mutableStateOf(data)
-    }
-
     var selectedGroup by remember { mutableStateOf(PowerTileGroup.Alpha) }
     var globalDelayInput by remember { mutableDoubleStateOf(1.5) }
 
     var tileToEdit by remember { mutableStateOf<LinkedTileData?>(null) }
     var tileEditDelay by remember { mutableDoubleStateOf(0.0) }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, PowerTilePropertiesData::class.java)
+    val moduleDataState = syncManager.dataState
+
     fun sync() {
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(moduleDataState.value)
-        }
+        syncManager.sync()
     }
 
     fun getTileAt(mx: Int, my: Int): LinkedTileData? {
@@ -258,7 +248,9 @@ fun PowerTilePropertiesEP(
                                     .height(40.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(
-                                        if (isSelected) group.color.copy(alpha = 0.8f) else group.color.copy(alpha = 0.2f)
+                                        if (isSelected) group.color.copy(alpha = 0.8f) else group.color.copy(
+                                            alpha = 0.2f
+                                        )
                                     )
                                     .border(
                                         width = if (isSelected) 1.dp else 0.dp,

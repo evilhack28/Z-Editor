@@ -66,18 +66,17 @@ import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.ModifyConveyorPlantData
 import com.example.z_editor.data.ModifyConveyorRemoveData
 import com.example.z_editor.data.ModifyConveyorWaveActionData
-import com.example.z_editor.data.repository.PlantRepository
-import com.example.z_editor.data.repository.PlantTag
+import com.example.z_editor.data.ParachuteRainEventData
 import com.example.z_editor.data.PvzLevelFile
 import com.example.z_editor.data.RtidParser
+import com.example.z_editor.data.repository.PlantRepository
+import com.example.z_editor.data.repository.PlantTag
 import com.example.z_editor.views.components.AssetImage
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
 import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.example.z_editor.views.editor.pages.others.NumberInputInt
-import com.google.gson.Gson
-
-private val gson = Gson()
+import rememberJsonSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,25 +91,17 @@ fun ModifyConveyorEventEP(
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
 
-    val actionDataState = remember {
-        val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
-        val data = try {
-            gson.fromJson(obj?.objData, ModifyConveyorWaveActionData::class.java)
-        } catch (_: Exception) {
-            ModifyConveyorWaveActionData()
-        }
-        mutableStateOf(data)
-    }
-
     val hasConveyorModule = remember(rootLevelFile) {
         rootLevelFile.objects.any { it.objClass == "ConveyorSeedBankProperties" }
     }
 
+    val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
+    val syncManager = rememberJsonSync(obj, ModifyConveyorWaveActionData::class.java)
+    val actionDataState = syncManager.dataState
+
     fun sync(newData: ModifyConveyorWaveActionData) {
         actionDataState.value = newData
-        rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
-            it.objData = gson.toJsonTree(newData)
-        }
+        syncManager.sync()
     }
 
     fun wrapRtid(plantId: String): String = "RTID($plantId@PlantTypes)"
@@ -124,7 +115,13 @@ fun ModifyConveyorEventEP(
             TopAppBar(
                 title = {
                     Column {
-                        Text("编辑 $currentAlias", fontWeight = FontWeight.Bold, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "编辑 $currentAlias",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             "事件类型：传送带变更",
                             fontSize = 15.sp,
@@ -451,7 +448,7 @@ fun ModifyConveyorPlantDialog(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NumberInputInt(
-                        value =  tempWeight,
+                        value = tempWeight,
                         onValueChange = { tempWeight = it },
                         label = "变更后权重",
                         modifier = Modifier.weight(1f),

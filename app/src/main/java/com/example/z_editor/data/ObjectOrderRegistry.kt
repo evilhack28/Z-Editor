@@ -17,10 +17,11 @@ object ObjectOrderRegistry {
         "PowerTileProperties",
         "ZombiePotionModuleProperties",
         "WarMistProperties",
-        "RainDarkProperties",
+
         "ZombieMoveFastModuleProperties",
         "IncreasedCostModuleProperties",
         "DeathHoleModuleProperties",
+        "LevelScoringModuleProperties",
 
         "InitialPlantEntryProperties",
         "InitialZombieProperties",
@@ -48,6 +49,7 @@ object ObjectOrderRegistry {
         "StarChallengeSimultaneousPlantsProps",
         "StarChallengeUnfreezePlantsProps",
         "StarChallengeBlowZombieProps",
+        "StarChallengeTargetScoreProps",
 
 
         "WaveManagerModuleProperties",
@@ -76,6 +78,9 @@ object ObjectOrderRegistry {
         "SpawnGravestonesWaveActionProps",
 
         "ModifyConveyorWaveActionProps",
+
+        "ZombieType",
+        "ZombiePropertySheet",
     )
 
     private val ORDER_MAP: Map<String, Int> = ORDER_LIST.withIndex().associate { it.value to it.index }

@@ -380,6 +380,8 @@ fun LevelListScreen(
                             onDelete = { pendingDelete = fileName }
                         )
                     }
+
+                    item { Spacer(Modifier.height(60.dp)) }
                 }
             }
         }
