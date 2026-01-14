@@ -96,7 +96,7 @@ fun LevelMutatorMaxSunPropsEP(
             ) {
                 HelpSection(
                     title = "简要介绍",
-                    body = "可以用此模块覆盖关卡内能够储存的阳光最大值。"
+                    body = "该模块原本用于控制潘追关卡不同难度级别，可以用此模块覆盖关卡内能够储存的阳光最大值。"
                 )
             }
         }

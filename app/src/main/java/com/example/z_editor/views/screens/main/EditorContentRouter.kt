@@ -42,6 +42,7 @@ import com.example.z_editor.views.editor.pages.module.InitialZombieEntryEP
 import com.example.z_editor.views.editor.pages.module.LastStandMinigamePropertiesEP
 import com.example.z_editor.views.editor.pages.module.LevelMutatorMaxSunPropsEP
 import com.example.z_editor.views.editor.pages.module.LevelMutatorStartingPlantfoodPropsEP
+import com.example.z_editor.views.editor.pages.module.ManholePipelinePropertiesEP
 import com.example.z_editor.views.editor.pages.module.PiratePlankPropertiesEP
 import com.example.z_editor.views.editor.pages.module.PowerTilePropertiesEP
 import com.example.z_editor.views.editor.pages.module.RailcartPropertiesEP
@@ -485,6 +486,13 @@ fun EditorContentRouter(
             scrollState = getScrollState("BowlingMinigameModule")
         )
 
+        is EditorSubScreen.ManholePipelineModule -> ManholePipelinePropertiesEP(
+            rtid = targetState.rtid,
+            onBack = actions.navigateBack,
+            rootLevelFile = rootLevelFile!!,
+            scrollState = getScrollState("ManholePipelineModule")
+        )
+
         is EditorSubScreen.UnknownDetail -> UnknownEP(
             rtid = targetState.rtid,
             onBack = actions.navigateBack,
@@ -535,7 +543,9 @@ fun EditorContentRouter(
             onBack = actions.navigateBack,
             rootLevelFile = rootLevelFile,
             onRequestZombieSelection = actions.onLaunchZombieSelector,
-            scrollState = getScrollState("StormDetail")
+            scrollState = getLazyState(targetState.rtid),
+            onInjectZombie = actions.onInjectZombie,
+            onEditCustomZombie = actions.onEditCustomZombie
         )
 
         is EditorSubScreen.RaidingDetail -> RaidingPartyEventEP(
@@ -616,7 +626,9 @@ fun EditorContentRouter(
             rootLevelFile = rootLevelFile,
             onRequestZombieSelection = actions.onLaunchZombieSelector,
             onRequestGridItemSelection = actions.onLaunchGridItemSelector,
-            scrollState = getLazyState(targetState.rtid)
+            scrollState = getLazyState(targetState.rtid),
+            onInjectZombie = actions.onInjectZombie,
+            onEditCustomZombie = actions.onEditCustomZombie
         )
 
         is EditorSubScreen.ZombiePotionActionDetail -> ZombiePotionActionPropsEP(

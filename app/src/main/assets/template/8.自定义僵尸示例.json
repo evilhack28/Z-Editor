@@ -12,8 +12,7 @@
           "RTID(SeedBank@CurrentLevel)",
           "RTID(DefaultZombieWinCondition@LevelModules)",
           "RTID(NewWaves@CurrentLevel)",
-          "RTID(DefaultCustomLevel@LevelModules)",
-          "RTID(ChallengeModule@CurrentLevel)"
+          "RTID(DefaultCustomLevel@LevelModules)"
         ],
         "MusicType": "",
         "Name": "自定义僵尸示例",
@@ -35,30 +34,6 @@
         "PlantWhiteList": [],
         "PresetPlantList": [],
         "SelectionMethod": "chooser"
-      }
-    },
-    {
-      "aliases": [
-        "ChallengeModule"
-      ],
-      "objclass": "StarChallengeModuleProperties",
-      "objdata": {
-        "Challenges": [
-          [
-            "RTID(BeatTheLevel@CurrentLevel)"
-          ]
-        ],
-        "ChallengesAlwaysAvailable": true
-      }
-    },
-    {
-      "aliases": [
-        "BeatTheLevel"
-      ],
-      "objclass": "StarChallengeBeatTheLevelProps",
-      "objdata": {
-        "Description": "",
-        "DescriptiveName": ""
       }
     },
     {

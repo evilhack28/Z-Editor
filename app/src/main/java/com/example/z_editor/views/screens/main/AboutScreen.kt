@@ -107,9 +107,10 @@ fun AboutScreen(
 
             InfoSectionCard(title = "核心功能") {
                 BulletPoint("模块化编辑：对关卡模块和事件进行模块化管理，实现快速配置。")
-                BulletPoint("多模式支持：支持编辑我是僵尸、砸罐子、坚不可摧等多种模式。")
+                BulletPoint("多模式支持：支持编辑我是僵尸、砸罐子、坚不可摧、僵王战等多种模式。")
+                BulletPoint("自定义注入：实现在关卡内注入并管理自定义僵尸、编辑其基础属性。")
                 BulletPoint("智能校验：自动检测模块依赖缺失、引用失效等问题，有效预防关卡闪退。")
-                BulletPoint("资源预览：内置植物、僵尸、障碍物图标，所见即所得。")
+                BulletPoint("资源预览：内置植物、僵尸、障碍物图标，优化编辑体验，所见即所得。")
             }
 
             InfoSectionCard(title = "使用说明") {

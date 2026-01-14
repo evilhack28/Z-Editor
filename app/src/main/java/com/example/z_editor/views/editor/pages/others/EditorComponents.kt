@@ -623,7 +623,7 @@ fun ZombieEditSheetContent(
                 onClick = { showSwapDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFF3E0), // 浅橙色背景区分
+                    containerColor = Color(0xFFFFF3E0),
                     contentColor = Color(0xFFEF6C00)
                 ),
                 shape = RoundedCornerShape(8.dp),

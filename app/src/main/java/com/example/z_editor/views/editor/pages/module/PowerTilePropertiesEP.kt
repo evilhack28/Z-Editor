@@ -327,7 +327,6 @@ fun PowerTilePropertiesEP(
                                                 contentDescription = groupConfig.label,
                                                 modifier = Modifier.fillMaxSize()
                                             )
-
                                             Box(
                                                 modifier = Modifier
                                                     .align(Alignment.BottomCenter)

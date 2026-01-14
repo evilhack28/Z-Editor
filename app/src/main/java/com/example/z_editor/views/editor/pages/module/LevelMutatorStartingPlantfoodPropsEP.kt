@@ -96,7 +96,7 @@ fun LevelMutatorStartingPlantfoodPropsEP(
             ) {
                 HelpSection(
                     title = "简要介绍",
-                    body = "可以用此模块覆盖关卡内携带的初始能量豆数量。"
+                    body = "该模块原本用于控制潘追关卡不同难度级别，可以用此模块覆盖关卡内携带的初始能量豆数量。"
                 )
             }
         }
@@ -105,7 +105,8 @@ fun LevelMutatorStartingPlantfoodPropsEP(
                 .padding(padding)
                 .fillMaxSize()
                 .padding(16.dp)
-                .verticalScroll(scrollState), verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),

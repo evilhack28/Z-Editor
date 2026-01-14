@@ -353,6 +353,19 @@ data class LevelScoringData(
     @SerializedName("StartingPlantfood") var startingPlantfood: Int = 0
 )
 
+// === 地道模块 ===
+data class ManholePipelineModuleData(
+    @SerializedName("OperationTimePerGrid") var operationTimePerGrid: Int = 1,
+    @SerializedName("DamagePerSecond") var damagePerSecond: Int = 30,
+    @SerializedName("PipelineList") var pipelineList: MutableList<PipelineData> = mutableListOf()
+)
+
+data class PipelineData(
+    @SerializedName("StartX") var startX: Int = 0,
+    @SerializedName("StartY") var startY: Int = 0,
+    @SerializedName("EndX") var endX: Int = 0,
+    @SerializedName("EndY") var endY: Int = 0
+)
 
 // ======================== 2. 物体属性解析 ========================
 

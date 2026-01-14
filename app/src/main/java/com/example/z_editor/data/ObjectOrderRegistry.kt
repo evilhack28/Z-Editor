@@ -7,6 +7,7 @@ object ObjectOrderRegistry {
 
         "SeedBankProperties",
         "ConveyorSeedBankProperties",
+
         "SunDropperProperties",
         "SunBombChallengeProperties",
         "LastStandMinigameProperties",
@@ -50,6 +51,9 @@ object ObjectOrderRegistry {
         "StarChallengeUnfreezePlantsProps",
         "StarChallengeBlowZombieProps",
         "StarChallengeTargetScoreProps",
+
+        "LevelMutatorStartingPlantfoodProps",
+        "LevelMutatorMaxSunProps",
 
 
         "WaveManagerModuleProperties",

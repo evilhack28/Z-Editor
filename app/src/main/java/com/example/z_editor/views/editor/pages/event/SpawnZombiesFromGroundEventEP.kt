@@ -48,6 +48,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,16 +94,17 @@ fun SpawnZombiesFromGroundEventEP(
     val currentAlias = RtidParser.parse(rtid)?.alias ?: ""
     val focusManager = LocalFocusManager.current
     var showHelpDialog by remember { mutableStateOf(false) }
+    var localRefreshTrigger by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
 
     var batchLevelFloat by remember { mutableFloatStateOf(1f) }
     var showBatchConfirmDialog by remember { mutableStateOf(false) }
 
-    val objectMap = remember(rootLevelFile) {
+    val objectMap = remember(rootLevelFile, localRefreshTrigger) {
         rootLevelFile.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
     }
 
-    val actionDataState = remember {
+    val actionDataState = remember(localRefreshTrigger) {
         val obj = rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }
         val data = try {
             gson.fromJson(obj?.objData, SpawnZombiesFromGroundData::class.java)
@@ -253,8 +255,7 @@ fun SpawnZombiesFromGroundEventEP(
                             editingZombie = updatedZombie
                             sync(actionDataState.value.copy(zombies = currentList))
                             showBottomSheet = false
-                            editingZombie = null
-                            onBack()
+                            localRefreshTrigger++
                         }
                     }
                 },

@@ -85,6 +85,7 @@ sealed class EditorSubScreen {
     data class PowerTile(val rtid: String) : EditorSubScreen()
     data class PiratePlank(val rtid: String) : EditorSubScreen()
     data class RoofProperties(val rtid: String) : EditorSubScreen()
+    data class ManholePipelineModule(val rtid: String) : EditorSubScreen()
     data class Tide(val rtid: String) : EditorSubScreen()
     data class RainDarkProperties(val rtid: String) : EditorSubScreen()
     data class WarMistProperties(val rtid: String) : EditorSubScreen()
@@ -646,6 +647,17 @@ object ModuleRegistry {
             initialDataFactory = { LevelMutatorStartingPlantfoodPropsData() },
             navigationFactory = { rtid -> EditorSubScreen.StartingPlantfoodModule(rtid) }
         ),
+        "LevelScoringModuleProperties" to ModuleMetadata(
+            title = "积分模块",
+            description = "启用积分模块，杀死僵尸获得分数",
+            icon = Icons.Default.Scoreboard,
+            isCore = false,
+            category = ModuleCategory.Base,
+            defaultAlias = "LevelScoring",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { LevelScoringData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
 
         "LastStandMinigameProperties" to ModuleMetadata(
             title = "坚不可摧",
@@ -801,17 +813,6 @@ object ModuleRegistry {
             initialDataFactory = { ZombieMoveFastModulePropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.ZombieMoveFastModule(rtid) }
         ),
-        "LevelScoringModuleProperties" to ModuleMetadata(
-            title = "积分模块",
-            description = "启用积分模块，杀死僵尸获得分数",
-            icon = Icons.Default.Scoreboard,
-            isCore = false,
-            category = ModuleCategory.Mode,
-            defaultAlias = "LevelScoring",
-            defaultSource = "CurrentLevel",
-            initialDataFactory = { LevelScoringData() },
-            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
-        ),
 
         "InitialPlantEntryProperties" to ModuleMetadata(
             title = "预置植物",
@@ -915,6 +916,17 @@ object ModuleRegistry {
             defaultSource = "CurrentLevel",
             initialDataFactory = { PowerTilePropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.PowerTile(rtid) }
+        ),
+        "ManholePipelineModuleProperties" to ModuleMetadata(
+            title = "地下管道",
+            description = "设置蒸汽时代的地下传输管道",
+            icon = Icons.Default.Timeline,
+            isCore = true,
+            category = ModuleCategory.Scene,
+            defaultAlias = "ManholePipeline",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { ManholePipelineModuleData() },
+            navigationFactory = { rtid -> EditorSubScreen.ManholePipelineModule(rtid) }
         ),
         "RainDarkProperties" to ModuleMetadata(
             title = "环境天气",
