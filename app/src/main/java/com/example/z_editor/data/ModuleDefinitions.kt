@@ -70,6 +70,7 @@ sealed class EditorSubScreen {
     data class PlantSelection(val isMultiSelect: Boolean = false) : EditorSubScreen()
     data class ZombieSelection(val isMultiSelect: Boolean = false) : EditorSubScreen()
     data class EventSelection(val waveIndex: Int) : EditorSubScreen()
+    data class JsonView(val fileName: String) : EditorSubScreen()
 
     // 具体模块页
     data class LastStandMinigame(val rtid: String) : EditorSubScreen()
@@ -365,7 +366,7 @@ object EventRegistry {
             description = "从指定的障碍物种类生成僵尸",
             icon = Icons.Default.Groups,
             color = Color(0xFF607D8B),
-            defaultAlias = "GraveSpawnEvent",
+            defaultAlias = "GraveSpawner",
             defaultObjClass = "SpawnZombiesFromGridItemSpawnerProps",
             initialDataFactory = { SpawnZombiesFromGridItemData() },
             summaryProvider = { obj ->
@@ -633,17 +634,6 @@ object ModuleRegistry {
             defaultSource = "LevelModules",
             navigationFactory = { rtid -> EditorSubScreen.SunDropper(rtid) }
         ),
-        "StarChallengeModuleProperties" to ModuleMetadata(
-            title = "挑战模块",
-            description = "设置关卡的限制条件与挑战目标",
-            icon = Icons.AutoMirrored.Filled.FactCheck,
-            isCore = true,
-            category = ModuleCategory.Base,
-            defaultAlias = "ChallengeModule",
-            defaultSource = "CurrentLevel",
-            initialDataFactory = { StarChallengeModuleData() },
-            navigationFactory = { rtid -> EditorSubScreen.StarChallenge(rtid) }
-        ),
         "SeedBankProperties" to ModuleMetadata(
             title = "种子库",
             description = "预设卡槽植物与选卡方式",
@@ -687,6 +677,17 @@ object ModuleRegistry {
             initialDataFactory = { LevelMutatorStartingPlantfoodPropsData() },
             navigationFactory = { rtid -> EditorSubScreen.StartingPlantfoodModule(rtid) }
         ),
+        "StarChallengeModuleProperties" to ModuleMetadata(
+            title = "挑战模块",
+            description = "设置关卡的限制条件与挑战目标",
+            icon = Icons.AutoMirrored.Filled.FactCheck,
+            isCore = true,
+            category = ModuleCategory.Base,
+            defaultAlias = "ChallengeModule",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { StarChallengeModuleData() },
+            navigationFactory = { rtid -> EditorSubScreen.StarChallenge(rtid) }
+        ),
         "LevelScoringModuleProperties" to ModuleMetadata(
             title = "积分模块",
             description = "启用积分模块，杀死僵尸获得分数",
@@ -699,17 +700,6 @@ object ModuleRegistry {
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
 
-        "LastStandMinigameProperties" to ModuleMetadata(
-            title = "坚不可摧",
-            description = "设置初始资源，开启布阵阶段",
-            icon = Icons.Default.Shield,
-            isCore = true,
-            category = ModuleCategory.Mode,
-            defaultAlias = "LastStand",
-            defaultSource = "CurrentLevel",
-            initialDataFactory = { LastStandMinigamePropertiesData() },
-            navigationFactory = { rtid -> EditorSubScreen.LastStandMinigame(rtid) }
-        ),
         "BowlingMinigameProperties" to ModuleMetadata(
             title = "沙滩保龄球",
             description = "设置禁种线以及禁用铲子",
@@ -766,8 +756,8 @@ object ModuleRegistry {
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
         "EvilDaveProperties" to ModuleMetadata(
-            title = "我是僵尸",
-            description = "启用我是僵尸模式，需手动配置僵尸卡槽和预置植物",
+            title = "我是僵尸模式",
+            description = "启用我是僵尸模式，需配置僵尸卡槽和预置植物",
             icon = Icons.Default.EmojiPeople,
             isCore = false,
             category = ModuleCategory.Mode,
@@ -789,13 +779,35 @@ object ModuleRegistry {
         ),
         "ZombossBattleIntroProperties" to ModuleMetadata(
             title = "僵王转场",
-            description = "控制Boss战前的过场动画",
+            description = "控制Boss战前的过场动画与血条显示",
             icon = Icons.Default.MovieFilter,
             isCore = false,
             category = ModuleCategory.Mode,
             defaultAlias = "ZombossBattleIntro",
             defaultSource = "CurrentLevel",
             initialDataFactory = { ZombossBattleIntroData() },
+            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
+        ),
+        "LastStandMinigameProperties" to ModuleMetadata(
+            title = "坚不可摧",
+            description = "设置初始资源，开启布阵阶段",
+            icon = Icons.Default.Shield,
+            isCore = true,
+            category = ModuleCategory.Mode,
+            defaultAlias = "LastStand",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { LastStandMinigamePropertiesData() },
+            navigationFactory = { rtid -> EditorSubScreen.LastStandMinigame(rtid) }
+        ),
+        "PVZ1OverwhelmModuleProperties" to ModuleMetadata(
+            title = "排山倒海",
+            description = "排山倒海小游戏，需配合传送带",
+            icon = Icons.Default.LocalFlorist,
+            isCore = false,
+            category = ModuleCategory.Mode,
+            defaultAlias = "PVZ1Overwhelm",
+            defaultSource = "CurrentLevel",
+            initialDataFactory = { PVZ1OverwhelmModulePropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
         "SunBombChallengeProperties" to ModuleMetadata(
@@ -808,17 +820,6 @@ object ModuleRegistry {
             defaultSource = "CurrentLevel",
             initialDataFactory = { SunBombChallengeData() },
             navigationFactory = { rtid -> EditorSubScreen.SunBombChallenge(rtid) }
-        ),
-        "PVZ1OverwhelmModuleProperties" to ModuleMetadata(
-            title = "排山倒海",
-            description = "排山倒海小游戏，需配合传送带",
-            icon = Icons.Default.LocalFlorist,
-            isCore = false,
-            category = ModuleCategory.Mode,
-            defaultAlias = "PVZ1Overwhelm",
-            defaultSource = "CurrentLevel",
-            initialDataFactory = { PVZ1OverwhelmModulePropertiesData() },
-            navigationFactory = { rtid -> EditorSubScreen.UnknownDetail(rtid) }
         ),
         "IncreasedCostModuleProperties" to ModuleMetadata(
             title = "通货膨胀",
@@ -916,7 +917,7 @@ object ModuleRegistry {
         ),
         "ZombiePotionModuleProperties" to ModuleMetadata(
             title = "僵尸药水",
-            description = "黑暗时代药水自动生成机制配置",
+            description = "配置黑暗时代药水自动生成机制",
             icon = Icons.Default.Science,
             isCore = true,
             allowMultiple = true,
@@ -961,7 +962,7 @@ object ModuleRegistry {
         ),
         "ManholePipelineModuleProperties" to ModuleMetadata(
             title = "地下管道",
-            description = "设置蒸汽时代的地下传输管道",
+            description = "配置蒸汽时代的地下传输管道",
             icon = Icons.Default.Timeline,
             isCore = true,
             category = ModuleCategory.Scene,
@@ -972,7 +973,7 @@ object ModuleRegistry {
         ),
         "RoofProperties" to ModuleMetadata(
             title = "屋顶花盆",
-            description = "配置屋顶关卡的预置花盆范围",
+            description = "配置屋顶关卡的预置花盆列数",
             icon = Icons.Default.LocalFlorist,
             isCore = true,
             category = ModuleCategory.Scene,
@@ -992,16 +993,6 @@ object ModuleRegistry {
             initialDataFactory = { TidePropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.Tide(rtid) }
         ),
-        "RainDarkProperties" to ModuleMetadata(
-            title = "环境天气",
-            description = "设置关卡的雨雪、雷电等环境特效",
-            icon = Icons.Default.AcUnit,
-            isCore = true,
-            category = ModuleCategory.Scene,
-            defaultAlias = "DefaultSnow",
-            defaultSource = "LevelModules",
-            navigationFactory = { rtid -> EditorSubScreen.RainDarkProperties(rtid) }
-        ),
         "WarMistProperties" to ModuleMetadata(
             title = "迷雾系统",
             description = "设置战场迷雾覆盖范围与交互",
@@ -1012,6 +1003,16 @@ object ModuleRegistry {
             defaultSource = "CurrentLevel",
             initialDataFactory = { WarMistPropertiesData() },
             navigationFactory = { rtid -> EditorSubScreen.WarMistProperties(rtid) }
+        ),
+        "RainDarkProperties" to ModuleMetadata(
+            title = "环境天气",
+            description = "设置关卡的雨雪、雷电等环境特效",
+            icon = Icons.Default.AcUnit,
+            isCore = true,
+            category = ModuleCategory.Scene,
+            defaultAlias = "DefaultSnow",
+            defaultSource = "LevelModules",
+            navigationFactory = { rtid -> EditorSubScreen.RainDarkProperties(rtid) }
         ),
 
         )

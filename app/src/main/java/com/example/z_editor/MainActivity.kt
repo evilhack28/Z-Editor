@@ -1,5 +1,6 @@
 package com.example.z_editor
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,6 +41,7 @@ enum class ScreenState {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(ScreenState.LevelList) }
+    var currentFileUri by remember { mutableStateOf<Uri?>(null) }
     var currentFileName by remember { mutableStateOf("") }
 
     AnimatedContent(
@@ -62,8 +64,9 @@ fun AppNavigation() {
         when (targetState) {
             ScreenState.LevelList -> {
                 LevelListScreen(
-                    onLevelClick = { fileName ->
+                    onLevelClick = { fileName, fileUri ->
                         currentFileName = fileName
+                        currentFileUri = fileUri // 保存 Uri
                         currentScreen = ScreenState.Editor
                     },
                     onAboutClick = {
@@ -74,6 +77,7 @@ fun AppNavigation() {
 
             ScreenState.Editor -> {
                 EditorScreen(
+                    fileUri = currentFileUri,
                     fileName = currentFileName,
                     onBack = {
                         currentScreen = ScreenState.LevelList

@@ -1318,7 +1318,7 @@
     },
     {
         "id": "flowerpot",
-        "name": "金盏花",
+        "name": "花盆",
         "tags": [
             "White",
             "Assist",
@@ -3197,5 +3197,13 @@
             "Parallel"
         ],
         "icon": "icon_wintermelon.gif"
+    },
+    {
+        "id": "moonflower_iz",
+        "name": "iz模式月光花",
+        "tags": [
+            "Parallel"
+        ],
+        "icon": "icon_moonflower.jpg"
     }
 ]

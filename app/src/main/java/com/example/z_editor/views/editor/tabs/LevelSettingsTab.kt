@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.LevelDefinitionData
@@ -116,7 +118,41 @@ fun LevelSettingsTab(
     onRemoveModule: (String) -> Unit,
     onNavigateToAddModule: () -> Unit
 ) {
-    if (levelDef == null) return
+    if (levelDef == null) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color.Gray
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "未找到关卡定义",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Color.Gray
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "当前关卡内未找到关卡定义模块 (LevelDefinition)，这是关卡文件的基础节点，缺失会导致关卡无法正常读取及运行。",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+    return
+}
 
     var pendingDeleteRtid by remember { mutableStateOf<String?>(null) }
 
@@ -210,7 +246,7 @@ fun LevelSettingsTab(
                 "可用编辑模块",
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = Color(0xFF388E3C)
+                color = Color(0xFF4CAF50)
             )
         }
         items(coreModules) { item ->
@@ -243,15 +279,15 @@ fun LevelSettingsTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
-                    .border(1.dp, Color(0xFF388E3C), RoundedCornerShape(8.dp))
+                    .border(1.dp, Color(0xFF4CAF50), RoundedCornerShape(8.dp))
                     .clickable { onNavigateToAddModule() }
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AddCircleOutline, null, tint = Color(0xFF388E3C))
+                    Icon(Icons.Default.AddCircleOutline, null, tint = Color(0xFF4CAF50))
                     Spacer(Modifier.width(8.dp))
-                    Text("添加新模块", color = Color(0xFF388E3C), fontWeight = FontWeight.Bold)
+                    Text("添加新模块", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -339,7 +375,7 @@ fun ModuleCard(info: ModuleUIInfo, onClick: () -> Unit, onDelete: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(info.icon, null, tint = Color(0xFF2E7D32), modifier = Modifier.size(28.dp))
+            Icon(info.icon, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(28.dp))
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(info.friendlyName, fontWeight = FontWeight.Bold, fontSize = 16.sp)

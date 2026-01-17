@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dangerous
 import androidx.compose.material.icons.filled.EmojiPeople
 import androidx.compose.material.icons.filled.Grid4x4
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShieldMoon
 import androidx.compose.material.icons.filled.Timeline
@@ -19,7 +20,7 @@ import com.example.z_editor.data.repository.ChallengeTypeInfo
  */
 enum class EditorTabType(val title: String, val icon: ImageVector) {
     Settings("关卡设置", Icons.Default.Settings),
-    Timeline("波次时间轴", Icons.Default.Timeline),
+    Timeline("波次容器", Icons.Default.Inbox),
     IZombie("我是僵尸", Icons.Default.EmojiPeople),
     VaseBreaker("罐子布局", Icons.Default.Grid4x4),
     BossFight("僵王属性", Icons.Default.Dangerous),

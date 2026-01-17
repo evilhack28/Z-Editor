@@ -61,6 +61,7 @@ import com.example.z_editor.views.editor.pages.module.WarMistPropertiesEP
 import com.example.z_editor.views.editor.pages.module.WaveManagerModulePropertiesEP
 import com.example.z_editor.views.editor.pages.module.ZombieMoveFastModulePropertiesEP
 import com.example.z_editor.views.editor.pages.module.ZombiePotionModulePropertiesEP
+import com.example.z_editor.views.editor.pages.others.JsonCodeViewerScreen
 import com.example.z_editor.views.editor.pages.others.LevelDefinitionEP
 import com.example.z_editor.views.editor.pages.others.UnknownEP
 import com.example.z_editor.views.editor.pages.others.WaveManagerPropertiesEP
@@ -705,6 +706,11 @@ fun EditorContentRouter(
         }
 
         // ======================== 选择器与导航 ========================
+
+        is EditorSubScreen.JsonView -> JsonCodeViewerScreen(
+            levelFile = rootLevelFile,
+            onBack = actions.navigateBack
+        )
 
         is EditorSubScreen.EventSelection -> EventSelectionScreen(
             waveIndex = targetState.waveIndex,

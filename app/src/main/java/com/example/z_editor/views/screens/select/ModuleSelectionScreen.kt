@@ -89,7 +89,7 @@ fun ModuleSelectionScreen(
             .toList()
     }
 
-    val themeColor = Color(0xFF388E3C)
+    val themeColor = Color(0xFF4CAF50)
 
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
@@ -256,8 +256,8 @@ fun ModuleSelectionCard(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val iconBgColor = if (isEnabled) Color(0xFF388E3C).copy(alpha = 0.1f) else Color.Gray.copy(alpha = 0.1f)
-            val iconTint = if (isEnabled) Color(0xFF388E3C) else Color.Gray
+            val iconBgColor = if (isEnabled) Color(0xFF4CAF50).copy(alpha = 0.1f) else Color.Gray.copy(alpha = 0.1f)
+            val iconTint = if (isEnabled) Color(0xFF4CAF50) else Color.Gray
 
             Box(
                 modifier = Modifier
@@ -297,14 +297,14 @@ fun ModuleSelectionCard(
                     Icon(
                         Icons.Default.AddCircle,
                         contentDescription = "可重复添加",
-                        tint = Color(0xFF388E3C),
+                        tint = Color(0xFF4CAF50),
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "已添加",
-                        tint = Color(0xFF388E3C),
+                        tint = Color(0xFF4CAF50),
                         modifier = Modifier.size(24.dp)
                     )
                 }

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,8 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -46,7 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.z_editor.data.PvzLevelFile
@@ -54,6 +50,7 @@ import com.example.z_editor.data.RtidParser
 import com.example.z_editor.data.SunDropperPropertiesData
 import com.example.z_editor.views.editor.pages.others.EditorHelpDialog
 import com.example.z_editor.views.editor.pages.others.HelpSection
+import com.example.z_editor.views.editor.pages.others.NumberInputDouble
 import com.google.gson.Gson
 
 private val gson = Gson()
@@ -88,6 +85,8 @@ fun SunDropperPropertiesEP(
         mutableStateOf(data)
     }
 
+    val themeColor = Color(0xFFFF9800)
+
     fun sync() {
         if (isCustomMode) {
             rootLevelFile.objects.find { it.aliases?.contains(currentAlias) == true }?.let {
@@ -114,7 +113,7 @@ fun SunDropperPropertiesEP(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFF9800),
+                    containerColor = themeColor,
                     titleContentColor = Color.White,
                     actionIconContentColor = Color.White
                 )
@@ -122,8 +121,19 @@ fun SunDropperPropertiesEP(
         }
     ) { padding ->
         if (showHelpDialog) {
-            EditorHelpDialog(title = "阳光掉落说明", onDismiss = { showHelpDialog = false }) {
-                HelpSection("模式说明", "默认模式引用系统配置；自定义模式会在关卡内生成独立配置对象。")
+            EditorHelpDialog(
+                title = "阳光掉落模块说明",
+                onDismiss = { showHelpDialog = false },
+                themeColor = themeColor
+            ) {
+                HelpSection(
+                    title = "简要介绍",
+                    body = "本模块用于配置关卡中的天降阳光参数，若是黑夜地图可考虑不添加此模块。"
+                )
+                HelpSection(
+                    title = "参数配置",
+                    body = "常规情况下，本模块使用在游戏文件里的定义，也可以选择打开自定义开关对详细参数进行编辑。"
+                )
             }
         }
 
@@ -141,10 +151,12 @@ fun SunDropperPropertiesEP(
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.WbSunny, null, tint = Color(0xFFFF9800))
+                    Icon(Icons.Default.WbSunny, null, tint = themeColor)
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("自定义本地参数", fontWeight = FontWeight.Bold)
@@ -175,50 +187,60 @@ fun SunDropperPropertiesEP(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("参数调节", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
-
-                    SunParamInput("首次掉落延迟", sunDataState.value.initialSunDropDelay) {
-                        sunDataState.value = sunDataState.value.copy(initialSunDropDelay = it)
-                        sync()
-                    }
-                    SunParamInput("初始掉落间隔", sunDataState.value.sunCountdownBase) {
-                        sunDataState.value = sunDataState.value.copy(sunCountdownBase = it)
-                        sync()
-                    }
-                    SunParamInput("最大掉落间隔", sunDataState.value.sunCountdownMax) {
-                        sunDataState.value = sunDataState.value.copy(sunCountdownMax = it)
-                        sync()
-                    }
-                    SunParamInput("间隔浮动范围", sunDataState.value.sunCountdownRange) {
-                        sunDataState.value = sunDataState.value.copy(sunCountdownRange = it)
-                        sync()
-                    }
-                    SunParamInput("单次增加间隔", sunDataState.value.sunCountdownIncreasePerSun) {
-                        sunDataState.value = sunDataState.value.copy(sunCountdownIncreasePerSun = it)
-                        sync()
-                    }
+                    Text("参数调节", color = themeColor, fontWeight = FontWeight.Bold)
+                    NumberInputDouble(
+                        value = sunDataState.value.initialSunDropDelay,
+                        onValueChange = {
+                            sunDataState.value = sunDataState.value.copy(initialSunDropDelay = it)
+                            sync()
+                        },
+                        label = "首次掉落延迟",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = themeColor
+                    )
+                    NumberInputDouble(
+                        value = sunDataState.value.sunCountdownBase,
+                        onValueChange = {
+                            sunDataState.value = sunDataState.value.copy(sunCountdownBase = it)
+                            sync()
+                        },
+                        label = "初始掉落间隔",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = themeColor
+                    )
+                    NumberInputDouble(
+                        value = sunDataState.value.sunCountdownMax,
+                        onValueChange = {
+                            sunDataState.value = sunDataState.value.copy(sunCountdownMax = it)
+                            sync()
+                        },
+                        label = "最大掉落间隔",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = themeColor
+                    )
+                    NumberInputDouble(
+                        value = sunDataState.value.sunCountdownRange,
+                        onValueChange = {
+                            sunDataState.value = sunDataState.value.copy(sunCountdownRange = it)
+                            sync()
+                        },
+                        label = "间隔浮动范围",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = themeColor
+                    )
+                    NumberInputDouble(
+                        value = sunDataState.value.sunCountdownIncreasePerSun,
+                        onValueChange = {
+                            sunDataState.value =
+                                sunDataState.value.copy(sunCountdownIncreasePerSun = it)
+                            sync()
+                        },
+                        label = "单次增加间隔",
+                        modifier = Modifier.fillMaxWidth(),
+                        color = themeColor
+                    )
                 }
             }
         }
     }
-}
-
-@Composable
-fun SunParamInput(label: String, value: Double, onValueChange: (Double) -> Unit) {
-    var textValue by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = textValue,
-        onValueChange = {
-            textValue = it
-            it.toDoubleOrNull()?.let { num -> onValueChange(num) }
-        },
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFFFF9800),
-            focusedLabelColor = Color(0xFFFF9800)
-        )
-    )
 }

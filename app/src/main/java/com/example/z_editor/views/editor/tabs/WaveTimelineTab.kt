@@ -311,7 +311,6 @@ fun WaveTimelineTab(
                 }
             }
         }
-
         onWavesChanged()
     }
 
@@ -1251,7 +1250,7 @@ fun WaveTimelineTab(
                     waveManager.waves.add(mutableListOf())
                     waveManager.waveCount = waveManager.waves.size
                     onWavesChanged()
-                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF388E3C))) {
+                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))) {
                     Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("添加空波次")
                 }
             }
@@ -1291,7 +1290,7 @@ fun WaveRowItem(
                         text = "$waveIndex",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color(0xFF388E3C)
+                        color = Color(0xFF4CAF50)
                     )
                     if (isFlagWave) Icon(
                         Icons.Default.Flag,

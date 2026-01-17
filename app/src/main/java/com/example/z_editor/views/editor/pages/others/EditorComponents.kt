@@ -48,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -198,6 +199,7 @@ fun NumberInputInt(
     )
 }
 
+
 @Composable
 fun NumberInputDouble(
     value: Double,
@@ -206,8 +208,16 @@ fun NumberInputDouble(
     color: Color = Color(0xFF1976D2),
     modifier: Modifier = Modifier
 ) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
-
+    var text by remember { mutableStateOf(value.toString()) }
+    LaunchedEffect(value) {
+        val parsed = text.toDoubleOrNull()
+        if (parsed != value) {
+            val isEditingSpecialChar = text.isEmpty() || text == "-" || text == "."
+            if (!isEditingSpecialChar) {
+                text = value.toString()
+            }
+        }
+    }
     OutlinedTextField(
         value = text,
         onValueChange = { input ->

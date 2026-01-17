@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,26 +23,45 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -51,64 +72,123 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.z_editor.data.repository.LevelRepository
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
+import android.provider.DocumentsContract
+import androidx.activity.result.contract.ActivityResultContract
+import com.example.z_editor.data.repository.FileItem
+import com.example.z_editor.data.repository.LevelRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+data class Breadcrumb(val name: String, val uri: Uri)
+
+class OpenDocumentTreeFixed : ActivityResultContract<Uri?, Uri?>() {
+    override fun createIntent(context: Context, input: Uri?): Intent {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        intent.addFlags(
+            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+        if (input != null) {
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
+        } else {
+            val primaryRootUri = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3A")
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, primaryRootUri)
+        }
+        return intent
+    }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+        return if (resultCode == android.app.Activity.RESULT_OK) intent?.data else null
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LevelListScreen(
-    onLevelClick: (String) -> Unit,
+    onLevelClick: (String, Uri) -> Unit,
     onAboutClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // ======================== 1. 状态声明 ========================
 
-    val files = remember { mutableStateListOf<String>() }
+    // 当前目录的内容列表
+    val fileItems = remember { mutableStateListOf<FileItem>() }
+    var isLoading by remember { mutableStateOf(false) }
 
-    var folderUri by remember {
+    // 路径栈：用于面包屑导航和返回上一级
+    var pathStack by remember { mutableStateOf(listOf<Breadcrumb>()) }
+
+    // 获取根目录 Uri (从 SharedPreferences)
+    var rootFolderUri by remember {
         mutableStateOf(
             context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-                .getString("folder_uri", null)
+                .getString("folder_uri", null)?.toUri()
         )
     }
 
-    var showNoFolderDialog by remember { mutableStateOf(false) }
-    var pendingDelete by remember { mutableStateOf<String?>(null) }
-    var showCopyDialog by remember { mutableStateOf(false) }
+    var itemToMove by remember { mutableStateOf<FileItem?>(null) }
+    var moveSourceUri by remember { mutableStateOf<Uri?>(null) }
+    val isMovingMode = itemToMove != null
 
-    var fileToCopy by remember { mutableStateOf("") }
-    var copyNameInput by remember { mutableStateOf("") }
+    // 各种弹窗状态
+    var showNoFolderDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<FileItem?>(null) }
+    var itemToRename by remember { mutableStateOf<FileItem?>(null) }
+    var itemToCopy by remember { mutableStateOf<FileItem?>(null) }
+
+    var showNewFolderDialog by remember { mutableStateOf(false) }
+    var newFolderNameInput by remember { mutableStateOf("") }
 
     var showTemplateDialog by remember { mutableStateOf(false) }
     var showCreateNameDialog by remember { mutableStateOf(false) }
 
-    var templates by remember { mutableStateOf<List<String>>(emptyList()) }
-    var selectedTemplate by remember { mutableStateOf("") }
+    var showMenu by remember { mutableStateOf(false) }
+    var confirmCheckbox by remember { mutableStateOf(false) }
+
+    // 输入框临时变量
+    var renameInput by remember { mutableStateOf("") }
+    var copyInput by remember { mutableStateOf("") }
     var newLevelNameInput by remember { mutableStateOf("") }
 
-    // ======================== 2. 逻辑方法 ========================
+    var templates by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedTemplate by remember { mutableStateOf("") }
 
-    fun reload() {
-        if (folderUri == null) {
-            showNoFolderDialog = true
-        } else {
-            files.clear()
-            files.addAll(LevelRepository.getExternalLevelFiles(context))
+    // ======================== 2. 核心逻辑 ========================
+
+    fun loadCurrentDirectory() {
+        val currentUri = pathStack.lastOrNull()?.uri ?: rootFolderUri ?: return
+
+        isLoading = true
+        scope.launch {
+            val items = withContext(Dispatchers.IO) {
+                LevelRepository.getDirectoryContents(context, currentUri)
+            }
+            fileItems.clear()
+            fileItems.addAll(items)
+            isLoading = false
         }
     }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+        contract = OpenDocumentTreeFixed()
     ) { uri ->
         if (uri != null) {
             context.contentResolver.takePersistableUriPermission(
@@ -117,140 +197,563 @@ fun LevelListScreen(
             )
             context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
                 .edit { putString("folder_uri", uri.toString()) }
-            folderUri = uri.toString()
+
+            rootFolderUri = uri
+
+            val docFile = DocumentFile.fromTreeUri(context, uri)
+            val rootName = docFile?.name ?: "根目录"
+            pathStack = listOf(Breadcrumb(rootName, uri))
+
             showNoFolderDialog = false
-            reload()
+            loadCurrentDirectory()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (rootFolderUri == null) {
+            showNoFolderDialog = true
+        } else {
+            if (pathStack.isEmpty()) {
+                val docFile = DocumentFile.fromTreeUri(context, rootFolderUri!!)
+                val rootName = docFile?.name ?: "根目录"
+                pathStack = listOf(Breadcrumb(rootName, rootFolderUri!!))
+            }
+            loadCurrentDirectory()
+        }
+    }
+
+    // 返回键处理
+    BackHandler(enabled = pathStack.size > 1) {
+        pathStack = pathStack.dropLast(1)
+        loadCurrentDirectory()
+    }
+
+    // --- 文件/文件夹 操作逻辑 ---
+    fun navigateToFolder(folder: FileItem) {
+        pathStack = pathStack + Breadcrumb(folder.name, folder.uri)
+        loadCurrentDirectory()
+    }
+
+    fun handleRenameConfirm() {
+        val target = itemToRename ?: return
+        val currentUri = pathStack.last().uri
+        var finalName = renameInput.trim()
+        if (!target.isDirectory && !finalName.endsWith(".json", ignoreCase = true)) {
+            finalName += ".json"
+        }
+        if (LevelRepository.renameItem(
+                context,
+                currentUri,
+                target.name,
+                finalName,
+                target.isDirectory
+            )
+        ) {
+            Toast.makeText(context, "重命名成功", Toast.LENGTH_SHORT).show()
+            itemToRename = null
+            loadCurrentDirectory()
+        } else {
+            Toast.makeText(context, "重命名失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun handleDeleteConfirm() {
+        val target = itemToDelete ?: return
+        val currentUri = pathStack.last().uri
+
+        LevelRepository.deleteItem(context, currentUri, target.name, target.isDirectory)
+        Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
+        itemToDelete = null
+        loadCurrentDirectory()
+    }
+
+    fun handleCopyConfirm() {
+        val target = itemToCopy ?: return
+        val currentUri = pathStack.last().uri
+
+        var finalName = copyInput.trim()
+        if (!finalName.endsWith(".json", ignoreCase = true)) {
+            finalName += ".json"
+        }
+        if (LevelRepository.copyLevelToTarget(context, target.name, finalName, currentUri)) {
+            Toast.makeText(context, "复制成功", Toast.LENGTH_SHORT).show()
+            itemToCopy = null
+            loadCurrentDirectory()
+        } else {
+            Toast.makeText(context, "复制失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun handleMoveConfirm() {
+        val target = itemToMove ?: return
+        val source = moveSourceUri ?: return
+        val dest = pathStack.last().uri
+
+        if (source == dest) {
+            Toast.makeText(context, "源目录和目标目录相同", Toast.LENGTH_SHORT).show()
+            itemToMove = null
+            moveSourceUri = null
+            return
+        }
+
+        isLoading = true
+        scope.launch {
+            val success = withContext(Dispatchers.IO) {
+                LevelRepository.moveFile(context, source, target.name, dest)
+            }
+            isLoading = false
+            if (success) {
+                Toast.makeText(context, "移动成功", Toast.LENGTH_SHORT).show()
+                itemToMove = null
+                moveSourceUri = null
+                loadCurrentDirectory()
+            } else {
+                Toast.makeText(context, "移动失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun handleNewFolder() {
+        if (newFolderNameInput.isBlank()) return
+        val currentUri = pathStack.last().uri
+        if (LevelRepository.createDirectory(context, currentUri, newFolderNameInput)) {
+            Toast.makeText(context, "文件夹创建成功", Toast.LENGTH_SHORT).show()
+            showNewFolderDialog = false
+            newFolderNameInput = ""
+            loadCurrentDirectory()
+        } else {
+            Toast.makeText(context, "创建失败", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun openTemplateSelector() {
-        if (folderUri == null) {
-            showNoFolderDialog = true
-            return
-        }
-        // 获取模板列表
         templates = LevelRepository.getTemplateList(context)
         if (templates.isEmpty()) {
-            Toast.makeText(context, "未找到模板文件 (assets/template)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "未找到模板", Toast.LENGTH_SHORT).show()
         } else {
             showTemplateDialog = true
         }
     }
 
-    fun handleTemplateSelected(templateName: String) {
-        selectedTemplate = templateName
-        newLevelNameInput = templateName
-        showTemplateDialog = false
-        showCreateNameDialog = true
-    }
+    fun handleCreateLevelConfirm() {
+        val currentUri = pathStack.lastOrNull()?.uri ?: return
+        var name = newLevelNameInput
+        if (!name.endsWith(".json", true)) name += ".json"
 
-    fun handleCreateConfirm() {
-        if (!newLevelNameInput.endsWith(".json", ignoreCase = true)) {
-            newLevelNameInput += ".json"
-        }
-
-        val success =
-            LevelRepository.createLevelFromTemplate(context, selectedTemplate, newLevelNameInput)
-        if (success) {
+        if (LevelRepository.createLevelFromTemplate(context, currentUri, selectedTemplate, name)) {
             Toast.makeText(context, "创建成功", Toast.LENGTH_SHORT).show()
             showCreateNameDialog = false
-            reload()
+            loadCurrentDirectory()
         } else {
-            Toast.makeText(context, "创建失败或文件名已存在", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "创建失败", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 初次启动加载
-    LaunchedEffect(Unit) { reload() }
+    // ======================== 3. UI 渲染 ========================
 
-    // ======================== 3. 各种弹窗组件 ========================
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("我的关卡库", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                actions = {
+                    IconButton(onClick = { loadCurrentDirectory() }) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            "刷新"
+                        )
+                    }
+                    IconButton(onClick = { folderPickerLauncher.launch(null) }) {
+                        Icon(
+                            Icons.Default.FolderOpen,
+                            "切换根目录"
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, "更多选项", tint = Color.White)
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("释放缓存") },
+                                onClick = {
+                                    showMenu = false
+                                    val count = LevelRepository.clearAllInternalCache(context)
+                                    Toast.makeText(
+                                        context,
+                                        "已清理 $count 个缓存文件",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Delete, null, tint = Color.Gray)
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("关于软件") },
+                                onClick = {
+                                    showMenu = false
+                                    onAboutClick()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Info, null, tint = Color.Gray)
+                                }
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF4CAF50),
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
+            )
+        },
+        floatingActionButton = {
+            if (isMovingMode) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            itemToMove = null
+                            moveSourceUri = null
+                        },
+                        containerColor = Color(0xFFFFEBEE),
+                        contentColor = Color(0xFFD32F2F),
+                        icon = { Icon(Icons.Default.Close, null) },
+                        text = { Text("取消") }
+                    )
+                    ExtendedFloatingActionButton(
+                        onClick = { handleMoveConfirm() },
+                        containerColor = Color(0xFF1976D2),
+                        contentColor = Color.White,
+                        icon = { Icon(Icons.Default.ContentPaste, null) },
+                        text = { Text("粘贴") }
+                    )
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FloatingActionButton(
+                        onClick = { showNewFolderDialog = true },
+                        containerColor = Color(0xFFE8F5E9),
+                        contentColor = Color(0xFF2E7D32),
+                        elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                    ) {
+                        Icon(Icons.Default.CreateNewFolder, "新建文件夹")
+                    }
 
-    // --- 弹窗 A: 提示选择文件夹 ---
+                    FloatingActionButton(
+                        onClick = { openTemplateSelector() },
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White,
+                        elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                    ) {
+                        Icon(Icons.Default.Add, "新建关卡")
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(Color(0xFFF5F5F5))
+        ) {
+            // --- 面包屑导航栏 ---
+            BreadcrumbBar(
+                pathStack = pathStack,
+                onBreadcrumbClick = { index ->
+                    pathStack = pathStack.take(index + 1)
+                    loadCurrentDirectory()
+                }
+            )
+            if (isMovingMode) {
+                Surface(
+                    color = Color(0xFFE3F2FD),
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.DriveFileMove, null, tint = Color(0xFF1976D2))
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "正在移动: ${itemToMove?.name}",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0D47A1),
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                "请导航至目标文件夹，然后点击右下角粘贴",
+                                fontSize = 12.sp,
+                                color = Color(0xFF1976D2)
+                            )
+                        }
+                    }
+                }
+            }
+            if (isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF4CAF50))
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (pathStack.size > 1) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        pathStack = pathStack.dropLast(1)
+                                        loadCurrentDirectory()
+                                    },
+                                elevation = CardDefaults.cardElevation(0.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Folder,
+                                        null,
+                                        tint = Color.Gray
+                                    )
+                                    Spacer(Modifier.width(16.dp))
+                                    Text(
+                                        "返回上一级",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (fileItems.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Default.FolderOpen,
+                                        null,
+                                        tint = Color.LightGray,
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    Text("文件夹为空", color = Color.Gray)
+                                }
+                            }
+                        }
+                    } else {
+                        // C. 文件列表
+                        items(fileItems) { item ->
+                            val isSelfMoving = isMovingMode && itemToMove == item
+                            val isInteractionDisabled = isMovingMode && !item.isDirectory
+                            val isActionButtonsDisabled = isMovingMode
+
+                            val alpha = if (isInteractionDisabled || isSelfMoving) 0.5f else 1f
+
+                            FileItemRow(
+                                item = item,
+                                modifier = Modifier.alpha(alpha),
+                                onClick = {
+                                    if (isMovingMode) {
+                                        if (item.isDirectory) navigateToFolder(item)
+                                    } else {
+                                        if (item.isDirectory) {
+                                            navigateToFolder(item)
+                                        } else {
+                                            if (LevelRepository.prepareInternalCache(
+                                                    context,
+                                                    item.uri,
+                                                    item.name
+                                                )
+                                            ) {
+                                                onLevelClick(item.name, item.uri)
+                                            }
+                                        }
+                                    }
+                                },
+                                actionsEnabled = !isActionButtonsDisabled, onRename = {
+                                    renameInput = if (item.isDirectory) {
+                                        item.name
+                                    } else {
+                                        item.name.substringBeforeLast(".")
+                                    }
+                                    itemToRename = item
+                                },
+                                onDelete = { itemToDelete = item },
+                                onCopy = {
+                                    if (!item.isDirectory) {
+                                        val base = item.name.substringBeforeLast(".")
+                                        copyInput = "${base}_copy"
+                                        itemToCopy = item
+                                    }
+                                },
+                                onMove = {
+                                    if (!item.isDirectory) {
+                                        itemToMove = item
+                                        moveSourceUri = pathStack.last().uri
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(160.dp)) }
+                }
+            }
+        }
+    }
+
     if (showNoFolderDialog) {
         AlertDialog(
-            onDismissRequest = { },
-            title = { Text("需要设置目录") },
-            text = { Text("请选择存放关卡 JSON 文件的文件夹以开始使用。") },
-            confirmButton = {
-                Button(onClick = { folderPickerLauncher.launch(null) }) { Text("去选择") }
-            }
+            onDismissRequest = {},
+            title = { Text("初始化设置") },
+            text = { Text("请选择一个文件夹作为关卡存储目录。") },
+            confirmButton = { Button(onClick = { folderPickerLauncher.launch(null) }) { Text("选择文件夹") } }
         )
     }
 
-    // --- 弹窗 B: 删除确认 ---
-    if (pendingDelete != null) {
+    if (itemToDelete != null) {
         AlertDialog(
-            onDismissRequest = { pendingDelete = null },
+            onDismissRequest = { itemToDelete = null },
             title = { Text("确认删除") },
-            text = { Text("确定要删除 \"${pendingDelete}\" 吗？此操作将同时清除外部文件和本地缓存。") },
-            confirmButton = {
-                TextButton(onClick = {
-                    LevelRepository.deleteLevelCompletely(context, pendingDelete!!)
-                    pendingDelete = null
-                    reload()
-                }) { Text("删除", color = Color.Red) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("取消") }
-            }
-        )
-    }
-
-    // --- 弹窗 C: 复制并重命名 ---
-    if (showCopyDialog) {
-        AlertDialog(
-            onDismissRequest = { showCopyDialog = false },
-            title = { Text("复制关卡") },
             text = {
                 Column {
-                    Text("请输入复制后的文件名：", fontSize = 12.sp, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = copyNameInput,
-                        onValueChange = { copyNameInput = it },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Text("确定要删除 \"${itemToDelete?.name}\" 吗？\n${if (itemToDelete!!.isDirectory) "如果是文件夹，其内容也将被删除。" else "此操作不可恢复。"}")
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Gray.copy(alpha = 0.05f))
+                            .clickable { confirmCheckbox = !confirmCheckbox }
+                            .padding(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = confirmCheckbox,
+                            onCheckedChange = { confirmCheckbox = it }
+                        )
+                        Text(
+                            if (itemToDelete!!.isDirectory) "我确定要永久删除此文件夹" else "我确定要永久删除此关卡",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (copyNameInput.isNotBlank() && copyNameInput.endsWith(
-                            ".json",
-                            ignoreCase = true
-                        )
-                    ) {
-                        if (LevelRepository.copyLevelToTarget(context, fileToCopy, copyNameInput)) {
-                            showCopyDialog = false
-                            reload()
-                        } else {
-                            Toast.makeText(context, "文件名已存在或复制失败", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                    } else {
-                        Toast.makeText(context, "必须以 .json 结尾", Toast.LENGTH_SHORT).show()
-                    }
-                }) { Text("确定") }
+                Button(
+                    onClick = {
+                        handleDeleteConfirm()
+                        confirmCheckbox = false
+                    },
+                    enabled = confirmCheckbox,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("确认删除") }
             },
             dismissButton = {
-                TextButton(onClick = { showCopyDialog = false }) { Text("取消") }
+                TextButton(onClick = {
+                    itemToDelete = null
+                    confirmCheckbox = false
+                }) { Text("取消") }
             }
         )
     }
 
-    // --- 弹窗 D: 选择模板 ---
+    if (itemToRename != null) {
+        AlertDialog(
+            onDismissRequest = { itemToRename = null },
+            title = { Text("重命名") },
+            text = {
+                OutlinedTextField(
+                    value = renameInput,
+                    onValueChange = { renameInput = it },
+                    label = { Text("新名称") },
+                    singleLine = true
+                )
+            },
+            confirmButton = { Button(onClick = { handleRenameConfirm() }) { Text("确定") } },
+            dismissButton = { TextButton(onClick = { itemToRename = null }) { Text("取消") } }
+        )
+    }
+
+    if (itemToCopy != null) {
+        AlertDialog(
+            onDismissRequest = { itemToCopy = null },
+            title = { Text("复制关卡") },
+            text = {
+                OutlinedTextField(
+                    value = copyInput,
+                    onValueChange = { copyInput = it },
+                    label = { Text("新文件名") })
+            },
+            confirmButton = { Button(onClick = { handleCopyConfirm() }) { Text("复制") } },
+            dismissButton = { TextButton(onClick = { itemToCopy = null }) { Text("取消") } }
+        )
+    }
+
+    if (showNewFolderDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewFolderDialog = false },
+            title = { Text("新建文件夹") },
+            text = {
+                OutlinedTextField(
+                    value = newFolderNameInput,
+                    onValueChange = { newFolderNameInput = it },
+                    label = { Text("文件夹名称") })
+            },
+            confirmButton = { Button(onClick = { handleNewFolder() }) { Text("创建") } },
+            dismissButton = {
+                TextButton(onClick = {
+                    showNewFolderDialog = false
+                }) { Text("取消") }
+            }
+        )
+    }
+
     if (showTemplateDialog) {
         AlertDialog(
             onDismissRequest = { showTemplateDialog = false },
             title = { Text("新建关卡 - 选择模板") },
             text = {
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 300.dp), // 限制高度，防止太长
+                    modifier = Modifier.heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(templates) { template ->
                         Card(
-                            onClick = { handleTemplateSelected(template) },
+                            onClick = {
+                                selectedTemplate = template
+                                newLevelNameInput = template.substringBeforeLast(".")
+                                showTemplateDialog = false
+                                showCreateNameDialog = true
+                            },
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -258,9 +761,17 @@ fun LevelListScreen(
                                 modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Description, null, tint = Color(0xFF4CAF50))
+                                Icon(
+                                    Icons.Default.Description,
+                                    null,
+                                    tint = Color(0xFF4CAF50)
+                                )
                                 Spacer(Modifier.width(16.dp))
-                                Text(template, fontSize = 16.sp)
+                                Text(
+                                    text = template.substringBeforeLast("."),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
                     }
@@ -272,178 +783,168 @@ fun LevelListScreen(
         )
     }
 
-    // --- 弹窗 E: 命名新关卡 ---
     if (showCreateNameDialog) {
         AlertDialog(
             onDismissRequest = { showCreateNameDialog = false },
-            title = { Text("命名新关卡") },
+            title = { Text("命名关卡") },
             text = {
-                Column {
-                    Text("模板: $selectedTemplate", fontSize = 12.sp, color = Color.Gray)
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = newLevelNameInput,
-                        onValueChange = { newLevelNameInput = it },
-                        label = { Text("文件名") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                OutlinedTextField(
+                    value = newLevelNameInput,
+                    onValueChange = { newLevelNameInput = it })
             },
-            confirmButton = {
-                Button(onClick = { handleCreateConfirm() }) { Text("创建") }
-            },
+            confirmButton = { Button(onClick = { handleCreateLevelConfirm() }) { Text("创建") } },
             dismissButton = {
-                TextButton(onClick = { showCreateNameDialog = false }) { Text("取消") }
+                TextButton(onClick = {
+                    showCreateNameDialog = false
+                }) { Text("取消") }
             }
         )
     }
+}
 
-    // ======================== 4. 主界面布局 ========================
+// === 自定义组件 ===
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "我的关卡库",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = getReadablePath(folderUri),
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontWeight = FontWeight.Normal,
-                            maxLines = 1
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAboutClick) {
-                        Icon(Icons.Default.Info, "软件介绍")
-                    }
-                    IconButton(onClick = { reload() }) {
-                        Icon(Icons.Default.Refresh, "刷新")
-                    }
-                    IconButton(onClick = { folderPickerLauncher.launch(null) }) {
-                        Icon(Icons.Default.FolderOpen, "选择目录")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4CAF50),
-                    titleContentColor = Color.White,
-                    actionIconContentColor = Color.White
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { openTemplateSelector() },
-                containerColor = Color(0xFF4CAF50),
-                contentColor = Color.White
+@Composable
+fun BreadcrumbBar(
+    pathStack: List<Breadcrumb>,
+    onBreadcrumbClick: (Int) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(vertical = 6.dp, horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items(pathStack.size) { index ->
+            val item = pathStack[index]
+            val isLast = index == pathStack.size - 1
+
+            Surface(
+                color = if (isLast) Color(0xFFE8F5E9) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !isLast) { onBreadcrumbClick(index) }
             ) {
-                Icon(Icons.Default.Add, "新建关卡")
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
-        ) {
-            if (files.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("当前目录没有 JSON 文件", color = Color.Gray)
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    items(files) { fileName ->
-                        FileItemCard(
-                            fileName = fileName,
-                            onEdit = {
-                                if (LevelRepository.prepareInternalCache(context, fileName)) {
-                                    onLevelClick(fileName)
-                                }
-                            },
-                            onCopy = {
-                                fileToCopy = fileName
-                                val base = fileName.substringBeforeLast(".")
-                                copyNameInput = "${base}_copy.json"
-                                showCopyDialog = true
-                            },
-                            onDelete = { pendingDelete = fileName }
+                    if (index == 0) {
+                        Icon(
+                            Icons.Default.FolderOpen,
+                            null,
+                            tint = if (isLast) Color(0xFF2E7D32) else Color.Gray,
+                            modifier = Modifier.size(16.dp)
                         )
+                        Spacer(Modifier.width(4.dp))
                     }
 
-                    item { Spacer(Modifier.height(60.dp)) }
+                    Text(
+                        text = item.name,
+                        color = if (isLast) Color(0xFF2E7D32) else Color(0xFF424242),
+                        fontWeight = if (isLast) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 15.sp
+                    )
                 }
+            }
+
+            if (!isLast) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
     }
 }
 
-// ======================== 5. 单行卡片组件 ========================
-
 @Composable
-fun FileItemCard(
-    fileName: String,
-    onEdit: () -> Unit,
+fun FileItemRow(
+    item: FileItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    actionsEnabled: Boolean = true,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
     onCopy: () -> Unit,
-    onDelete: () -> Unit
+    onMove: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
+        elevation = CardDefaults.cardElevation(1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Description, contentDescription = null, tint = Color(0xFF4CAF50))
-            Spacer(modifier = Modifier.width(12.dp))
+            Icon(
+                imageVector = if (item.isDirectory) Icons.Default.Folder else Icons.Default.Description,
+                contentDescription = null,
+                tint = if (item.isDirectory) Color(0xFFFFC107) else Color(0xFF4CAF50),
+                modifier = Modifier.size(28.dp)
+            )
+
+            Spacer(Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = fileName.substringBeforeLast("."), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = "JSON文件", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = if (item.isDirectory) item.name else item.name.substringBeforeLast("."),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                if (!item.isDirectory) {
+                    Text("JSON 文件", fontSize = 12.sp, color = Color.Gray)
+                }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "编辑", tint = Color(0xFF388E3C))
-                }
-                IconButton(onClick = onCopy) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        "复制",
-                        tint = Color(0xFF1976D2),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "删除", tint = Color.Red)
+            if (actionsEnabled) {
+                Row {
+                    IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            Icons.Default.Edit,
+                            null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    if (!item.isDirectory) {
+                        IconButton(onClick = onCopy, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        IconButton(onClick = onMove, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.DriveFileMove,
+                                null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            Icons.Default.Delete,
+                            null,
+                            tint = Color.Red.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
-    }
-}
-
-private fun getReadablePath(uriString: String?): String {
-    if (uriString == null) return "未选择目录"
-    return try {
-        val uri = uriString.toUri()
-        val decodedPath = Uri.decode(uri.path)
-        val segment = decodedPath.substringAfterLast(":")
-        segment.replace("/", " > ")
-    } catch (_: Exception) {
-        "已同步目录"
     }
 }

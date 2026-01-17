@@ -182,6 +182,10 @@ fun LevelDefinitionEP(
                     levelDef = levelDef.copy(name = it)
                     sync()
                 },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF388E3C),
+                    focusedLabelColor = Color(0xFF388E3C)
+                ),
                 label = { Text("关卡名称 (Name)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -196,6 +200,10 @@ fun LevelDefinitionEP(
                         levelDef = levelDef.copy(levelNumber = num)
                         sync()
                     },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF388E3C),
+                        focusedLabelColor = Color(0xFF388E3C)
+                    ),
                     label = { Text("关卡序号") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -209,6 +217,10 @@ fun LevelDefinitionEP(
                         levelDef = levelDef.copy(startingSun = sunVal)
                         sync()
                     },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF388E3C),
+                        focusedLabelColor = Color(0xFF388E3C)
+                    ),
                     label = { Text("初始阳光") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -221,6 +233,10 @@ fun LevelDefinitionEP(
                     levelDef = levelDef.copy(description = it)
                     sync()
                 },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF388E3C),
+                    focusedLabelColor = Color(0xFF388E3C)
+                ),
                 label = { Text("关卡描述 (Description)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
@@ -387,7 +403,7 @@ fun LevelDefinitionEP(
 
             SwitchOptionItem(
                 title = "禁用神器 (IsArtifactDisabled)",
-                subtitle = "开启后，本关卡无法携带神器",
+                subtitle = "开启后，关卡无法携带神器，庭院模式下自动生效",
                 checked = levelDef.isArtifactDisabled == true,
                 onCheckedChange = {
                     levelDef = levelDef.copy(isArtifactDisabled = if (it) true else null)

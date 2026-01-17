@@ -189,7 +189,7 @@ fun ConveyorSeedBankPropertiesEP(
             // === 区域 2: 掉落延迟控制 ===
             ConveyorConditionEditor(
                 title = "刷新延迟 (DropDelayConditions)",
-                subtitle = "单位: 秒 (卡包越多，生成越慢)",
+                subtitle = "单位: 秒",
                 headers = "卡包数 (MaxPackets)" to "延迟秒 (Delay)",
                 items = conveyorDataState.value.dropDelayConditions,
                 extractMaxPackets = { it.maxPacketsDelay },

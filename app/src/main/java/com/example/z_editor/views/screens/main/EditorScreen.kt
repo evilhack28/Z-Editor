@@ -1,6 +1,7 @@
 package com.example.z_editor.views.screens.main
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -13,21 +14,17 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
@@ -35,7 +32,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -76,7 +72,7 @@ private val gson = Gson()
 @SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditorScreen(fileName: String, onBack: () -> Unit) {
+fun EditorScreen(fileName: String, fileUri: Uri?, onBack: () -> Unit) {
     val context = LocalContext.current
 
     // ======================== 状态管理 ========================
@@ -89,8 +85,6 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
     var currentSubScreen by remember { mutableStateOf<EditorSubScreen>(EditorSubScreen.None) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var renameInput by remember { mutableStateOf("") }
     var missingModules by remember { mutableStateOf<List<ModuleMetadata>>(emptyList()) }
 
     // 滚动状态保持
@@ -143,30 +137,40 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         if (existingClasses.contains("ZombossBattleModuleProperties")) newTabs.add(EditorTabType.BossFight)
         availableTabs = newTabs
 
+        val isVaseBreaker = existingClasses.contains("VaseBreakerPresetProperties") ||
+                existingClasses.contains("VaseBreakerArcadeModuleProperties") ||
+                existingClasses.contains("VaseBreakerArcadeModuleProperties")
+        val isZombossBattle = existingClasses.contains("ZombossBattleModuleProperties") ||
+                existingClasses.contains("ZombossBattleIntroProperties")
+        val isLastStand = existingClasses.contains("LastStandMinigameProperties")
+        val isEvilDave = existingClasses.contains("EvilDaveProperties")
+
         val missingList = mutableListOf<String>()
+        if (!existingClasses.contains("CustomLevelModuleProperties")) missingList.add("CustomLevelModuleProperties")
         if (!existingClasses.contains("ZombiesAteYourBrainsProperties")) {
-            if(!existingClasses.contains("EvilDaveProperties")) missingList.add("ZombiesAteYourBrainsProperties")
+            if (!isEvilDave) missingList.add("ZombiesAteYourBrainsProperties")
         }
         if (!existingClasses.contains("ZombiesDeadWinConProperties")) {
-            if(!existingClasses.contains("EvilDaveProperties") &&
-                !existingClasses.contains("ZombossBattleModuleProperties")) missingList.add("ZombiesDeadWinConProperties")
+            if (!isEvilDave && !isZombossBattle) missingList.add("ZombiesDeadWinConProperties")
         }
-        if (!existingClasses.contains("CustomLevelModuleProperties")) missingList.add("CustomLevelModuleProperties")
         if (!existingClasses.contains("StandardLevelIntroProperties")) {
-            if(!existingClasses.contains("VaseBreakerPresetProperties") &&
-                !existingClasses.contains("LastStandMinigameProperties") &&
-                !existingClasses.contains("ZombossBattleIntroProperties")) missingList.add("StandardLevelIntroProperties")
+            if (!isVaseBreaker && !isLastStand && !isZombossBattle) missingList.add("StandardLevelIntroProperties")
         }
-        if (existingClasses.contains("VaseBreakerPresetProperties")) {
+        if (isVaseBreaker) {
+            if (!existingClasses.contains("VaseBreakerPresetProperties")) missingList.add("VaseBreakerPresetProperties")
             if (!existingClasses.contains("VaseBreakerArcadeModuleProperties")) missingList.add("VaseBreakerArcadeModuleProperties")
             if (!existingClasses.contains("VaseBreakerFlowModuleProperties")) missingList.add("VaseBreakerFlowModuleProperties")
         }
-        if (existingClasses.contains("EvilDaveProperties")) {
+        if (isEvilDave) {
             if (!existingClasses.contains("InitialPlantEntryProperties")) missingList.add("InitialPlantEntryProperties")
             if (!existingClasses.contains("SeedBankProperties")) missingList.add("SeedBankProperties")
         }
-        if (existingClasses.contains("ZombossBattleModuleProperties")) {
+        if (isZombossBattle) {
+            if (!existingClasses.contains("ZombossBattleModuleProperties")) missingList.add("ZombossBattleModuleProperties")
             if (!existingClasses.contains("ZombossBattleIntroProperties")) missingList.add("ZombossBattleIntroProperties")
+        }
+        if (isLastStand) {
+            if (!existingClasses.contains("SeedBankProperties")) missingList.add("SeedBankProperties")
         }
 
         missingModules = missingList.mapNotNull { objClass ->
@@ -174,6 +178,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             if (meta.title == "未知模块" && objClass != "Unknown") null else meta
         }
     }
+
     fun injectCustomZombie(originalAlias: String): String? {
         val typeName = ZombiePropertiesRepository.getTypeNameByAlias(originalAlias)
         val template = ZombiePropertiesRepository.getTemplateJson(typeName)
@@ -188,14 +193,19 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
 
         val baseName = typeName
         var index = 1
-        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_$index") == true }) { index++ }
+        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_$index") == true }) {
+            index++
+        }
         val newTypeAlias = "${baseName}_$index"
 
         var propsIndex = index
-        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_props_$propsIndex") == true }) { propsIndex++ }
+        while (rootLevelFile!!.objects.any { it.aliases?.contains("${baseName}_props_$propsIndex") == true }) {
+            propsIndex++
+        }
         val newPropsAlias = "${baseName}_props_$propsIndex"
 
-        val newPropsJson = gson.fromJson(gson.toJson(propsJsonSource), com.google.gson.JsonElement::class.java)
+        val newPropsJson =
+            gson.fromJson(gson.toJson(propsJsonSource), com.google.gson.JsonElement::class.java)
 
         val newPropsObj = PvzObject(
             aliases = listOf(newPropsAlias),
@@ -203,7 +213,8 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             objData = newPropsJson
         )
 
-        val newTypeJson = gson.fromJson(gson.toJson(typeJsonSource), com.google.gson.JsonObject::class.java)
+        val newTypeJson =
+            gson.fromJson(gson.toJson(typeJsonSource), com.google.gson.JsonObject::class.java)
         newTypeJson.addProperty("Properties", RtidParser.build(newPropsAlias, "CurrentLevel"))
 
         val newTypeObj = PvzObject(
@@ -215,7 +226,8 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
         rootLevelFile!!.objects.add(newPropsObj)
         rootLevelFile!!.objects.add(newTypeObj)
 
-        val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+        val newObjectMap =
+            rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
         parsedData = parsedData!!.copy(objectMap = newObjectMap)
         refreshTrigger++
 
@@ -242,11 +254,10 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
     LaunchedEffect(refreshTrigger) { recalculateLevelState() }
 
     // --- 业务操作 ---
-
     fun performSave(isExit: Boolean = false) {
         if (rootLevelFile == null || parsedData == null) return
         try {
-            LevelRepository.saveAndExport(context, currentFileName, rootLevelFile!!)
+            LevelRepository.saveAndExport(context, fileUri!!, currentFileName, rootLevelFile!!)
             val msg = if (isExit) "已自动保存并退出" else "保存成功"
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
@@ -257,22 +268,6 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
     fun handleExit() {
         performSave(isExit = true)
         onBack()
-    }
-
-    // 局部函数：重命名
-    fun performRename() {
-        if (!renameInput.endsWith(".json", true)) {
-            Toast.makeText(context, "文件名须以 .json 结尾", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val success = LevelRepository.renameLevel(context, currentFileName, renameInput)
-        if (success) {
-            currentFileName = renameInput
-            showRenameDialog = false
-            Toast.makeText(context, "重命名成功", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "重命名失败：文件已存在或目录受限", Toast.LENGTH_SHORT).show()
-        }
     }
 
     fun navigateBackToMain() {
@@ -320,7 +315,8 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 val removed = parsedData!!.levelDef!!.modules.remove(rtid)
 
                 if (removed) {
-                    val levelDefObj = rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
+                    val levelDefObj =
+                        rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
                     if (levelDefObj != null && levelDefObj.objData.isJsonObject) {
                         try {
                             val json = levelDefObj.objData.asJsonObject
@@ -334,31 +330,48 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                                     }
                                 }
                             }
-                        } catch (e: Exception) { e.printStackTrace() }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
 
                     if (objClass == "StarChallengeModuleProperties") {
-                        val moduleObj = rootLevelFile!!.objects.find { it.aliases?.contains(alias) == true }
+                        val moduleObj =
+                            rootLevelFile!!.objects.find { it.aliases?.contains(alias) == true }
                         if (moduleObj != null) {
                             try {
-                                val challengeData = gson.fromJson(moduleObj.objData, StarChallengeModuleData::class.java)
+                                val challengeData = gson.fromJson(
+                                    moduleObj.objData,
+                                    StarChallengeModuleData::class.java
+                                )
                                 val allChallengeRtids = challengeData.challenges.flatten()
                                 var deletedCount = 0
                                 allChallengeRtids.forEach { challengeRtid ->
                                     val cInfo = RtidParser.parse(challengeRtid)
                                     if (cInfo?.source == "CurrentLevel") {
-                                        if (rootLevelFile!!.objects.removeAll { it.aliases?.contains(cInfo.alias) == true }) {
+                                        if (rootLevelFile!!.objects.removeAll {
+                                                it.aliases?.contains(
+                                                    cInfo.alias
+                                                ) == true
+                                            }) {
                                             deletedCount++
                                         }
                                     }
                                 }
-                                if (deletedCount > 0) Toast.makeText(context, "移除了 $deletedCount 个关联挑战", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) { e.printStackTrace() }
+                                if (deletedCount > 0) Toast.makeText(
+                                    context,
+                                    "移除了 $deletedCount 个关联挑战",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
                     }
 
                     if (info?.source == "CurrentLevel") {
-                        val wasRemoved = rootLevelFile!!.objects.removeAll { it.aliases?.contains(alias) == true }
+                        val wasRemoved =
+                            rootLevelFile!!.objects.removeAll { it.aliases?.contains(alias) == true }
                     }
 
                     if (objClass == "WaveManagerModuleProperties") {
@@ -368,7 +381,9 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                         updateWaveManagerManualStartup(false)
                     }
 
-                    val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+                    val newObjectMap = rootLevelFile!!.objects.associateBy {
+                        it.aliases?.firstOrNull() ?: "unknown"
+                    }
 
                     val currentLevelDef = parsedData!!.levelDef!!
                     val newLevelDef = currentLevelDef.copy(
@@ -385,9 +400,14 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
             },
 
             onAddModule = { meta ->
-                val isDefaultExist = rootLevelFile!!.objects.any { it.aliases?.contains(meta.defaultAlias) == true }
+                val isDefaultExist =
+                    rootLevelFile!!.objects.any { it.aliases?.contains(meta.defaultAlias) == true }
                 if (!meta.allowMultiple && isDefaultExist) {
-                    Toast.makeText(context, "${meta.title} 模块已存在，不可重复添加", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "${meta.title} 模块已存在，不可重复添加",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     var finalAlias = meta.defaultAlias
                     if (rootLevelFile!!.objects.any { it.aliases?.contains(finalAlias) == true }) {
@@ -405,24 +425,35 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                         if (meta.initialDataFactory != null) {
                             var initialData = meta.initialDataFactory.invoke()
                             if (initialData is WaveManagerModuleData) {
-                                val actualWaveMgrAlias = rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.aliases?.firstOrNull() ?: "WaveManagerProps"
-                                initialData = initialData.copy(waveManagerProps = RtidParser.build(actualWaveMgrAlias, "CurrentLevel"))
+                                val actualWaveMgrAlias =
+                                    rootLevelFile!!.objects.find { it.objClass == "WaveManagerProperties" }?.aliases?.firstOrNull()
+                                        ?: "WaveManagerProps"
+                                initialData = initialData.copy(
+                                    waveManagerProps = RtidParser.build(
+                                        actualWaveMgrAlias,
+                                        "CurrentLevel"
+                                    )
+                                )
                             }
                             val newObj = PvzObject(
                                 aliases = listOf(finalAlias),
-                                objClass = ModuleRegistry.getAllKnownModules().entries.find { it.value == meta }?.key ?: "Unknown",
+                                objClass = ModuleRegistry.getAllKnownModules().entries.find { it.value == meta }?.key
+                                    ?: "Unknown",
                                 objData = gson.toJsonTree(initialData)
                             )
                             rootLevelFile!!.objects.add(newObj)
 
-                            val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+                            val newObjectMap = rootLevelFile!!.objects.associateBy {
+                                it.aliases?.firstOrNull() ?: "unknown"
+                            }
                             parsedData = parsedData!!.copy(objectMap = newObjectMap)
                         }
                     }
 
                     parsedData!!.levelDef?.modules?.add(newRtid)
 
-                    val levelDefObj = rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
+                    val levelDefObj =
+                        rootLevelFile!!.objects.find { it.objClass == "LevelDefinition" }
                     if (levelDefObj != null && levelDefObj.objData.isJsonObject) {
                         try {
                             val json = levelDefObj.objData.asJsonObject
@@ -431,10 +462,14 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                             }
                             val modulesArray = json.getAsJsonArray("Modules")
                             modulesArray.add(newRtid)
-                        } catch (e: Exception) { e.printStackTrace() }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
 
-                    if (meta.defaultAlias == "LastStandMinigame") updateWaveManagerManualStartup(true)
+                    if (meta.defaultAlias == "LastStandMinigame") updateWaveManagerManualStartup(
+                        true
+                    )
 
                     refreshTrigger++
                     Toast.makeText(context, "已添加 ${meta.title}", Toast.LENGTH_SHORT).show()
@@ -532,11 +567,14 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
 
             onDeleteWaveContainer = {
                 if (rootLevelFile != null) {
-                    val removed = rootLevelFile!!.objects.removeAll { it.objClass == "WaveManagerProperties" }
-                    val modObj = rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
+                    val removed =
+                        rootLevelFile!!.objects.removeAll { it.objClass == "WaveManagerProperties" }
+                    val modObj =
+                        rootLevelFile!!.objects.find { it.objClass == "WaveManagerModuleProperties" }
                     if (modObj != null) {
                         try {
-                            val modData = gson.fromJson(modObj.objData, WaveManagerModuleData::class.java)
+                            val modData =
+                                gson.fromJson(modObj.objData, WaveManagerModuleData::class.java)
                             modData.waveManagerProps = ""
                             modObj.objData = gson.toJsonTree(modData)
                         } catch (e: Exception) {
@@ -546,11 +584,18 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
 
                     if (removed) {
                         Toast.makeText(context, "已删除波次容器", Toast.LENGTH_SHORT).show()
-                        val newObjectMap = rootLevelFile!!.objects.associateBy { it.aliases?.firstOrNull() ?: "unknown" }
+                        val newObjectMap = rootLevelFile!!.objects.associateBy {
+                            it.aliases?.firstOrNull() ?: "unknown"
+                        }
                         parsedData = parsedData!!.copy(
                             objectMap = newObjectMap,
                             waveManager = null,
-                            waveModule = modObj?.let { gson.fromJson(it.objData, WaveManagerModuleData::class.java) }
+                            waveModule = modObj?.let {
+                                gson.fromJson(
+                                    it.objData,
+                                    WaveManagerModuleData::class.java
+                                )
+                            }
                                 ?: parsedData!!.waveModule
                         )
                         refreshTrigger++
@@ -741,24 +786,6 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
     }
     BackHandler(enabled = currentSubScreen == EditorSubScreen.None) { handleExit() }
 
-    if (showRenameDialog) {
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            title = { Text("重命名关卡") },
-            text = {
-                OutlinedTextField(
-                    value = renameInput,
-                    onValueChange = { renameInput = it },
-                    label = { Text("新文件名") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = { Button(onClick = { performRename() }) { Text("确定") } },
-            dismissButton = { TextButton(onClick = { showRenameDialog = false }) { Text("取消") } }
-        )
-    }
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -783,7 +810,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                 } else if (initialState == EditorSubScreen.PlantSelection() || initialState == EditorSubScreen.ZombieSelection()
                     || initialState == EditorSubScreen.PlantSelection(isMultiSelect = true)
                     || initialState == EditorSubScreen.ZombieSelection(isMultiSelect = true)
-                    || initialState  is EditorSubScreen.CustomZombieProperties
+                    || initialState is EditorSubScreen.CustomZombieProperties
                     || initialState == EditorSubScreen.StageSelection || initialState == EditorSubScreen.GridItemSelection
                     || initialState == EditorSubScreen.ChallengeSelection || initialState == EditorSubScreen.ToolSelection
                 ) {
@@ -820,13 +847,10 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                             },
                             actions = {
                                 IconButton(onClick = {
-                                    renameInput = currentFileName; showRenameDialog = true
+                                    performSave(isExit = false)
+                                    currentSubScreen = EditorSubScreen.JsonView(currentFileName)
                                 }) {
-                                    Icon(
-                                        Icons.Default.DriveFileRenameOutline,
-                                        "改名",
-                                        tint = Color.White
-                                    )
+                                    Icon(Icons.Default.Code, "查看代码", tint = Color.White)
                                 }
                                 IconButton(onClick = { performSave(isExit = false) }) {
                                     Icon(
@@ -837,7 +861,7 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color(0xFF388E3C), titleContentColor = Color.White
+                                containerColor = Color(0xFF4CAF50), titleContentColor = Color.White
                             )
                         )
                     }
@@ -866,7 +890,9 @@ fun EditorScreen(fileName: String, onBack: () -> Unit) {
                             ) {
                                 availableTabs.forEachIndexed { index, tabType ->
                                     Tab(
-                                        modifier = if (availableTabs.size == 2) Modifier.width(screenWidth / 2)
+                                        modifier = if (availableTabs.size == 2) Modifier.width(
+                                            screenWidth / 2
+                                        )
                                         else Modifier.width(screenWidth / 3),
                                         selected = selectedTabIndex == index,
                                         onClick = { selectedTabIndex = index },

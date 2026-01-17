@@ -187,11 +187,10 @@ fun TidePropertiesEP(
 
                         Spacer(Modifier.height(16.dp))
 
-                        // 9x5 网格绘制
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(1.8f) // 保持 9:5 比例
+                                .aspectRatio(1.8f)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(Color(0xFFF5F5F5))
                                 .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(6.dp))

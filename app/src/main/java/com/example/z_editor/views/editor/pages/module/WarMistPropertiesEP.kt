@@ -1,12 +1,23 @@
 package com.example.z_editor.views.editor.pages.module
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -25,7 +37,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -61,6 +75,13 @@ fun WarMistPropertiesEP(
 
     fun sync() {
         syncManager.sync()
+    }
+
+    val startingLocation = moduleDataState.value.initMistPosX
+    val isCellInFog: (Int) -> Boolean = remember(startingLocation) {
+        { col: Int ->
+            col >= startingLocation
+        }
     }
 
     Scaffold(
@@ -124,13 +145,8 @@ fun WarMistPropertiesEP(
                         fontSize = 16.sp,
                         color = themeColor
                     )
-                    Text(
-                        "下列位置值表示从右数有几列没覆盖",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 12.dp, top = 4.dp)
-                    )
 
+                    Spacer(modifier = Modifier.height(8.dp))
                     StepperControl(
                         label = "迷雾起始列",
                         valueText = "${moduleDataState.value.initMistPosX}",
@@ -177,6 +193,97 @@ fun WarMistPropertiesEP(
                             .padding(top = 12.dp)
                             .fillMaxWidth()
                     )
+                }
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp),
+                    modifier = Modifier.widthIn(max = 480.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "迷雾位置预览",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = themeColor,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1.8f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF5F5F5))
+                                .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(6.dp))
+                        ) {
+                            Column(Modifier.fillMaxSize()) {
+                                for (row in 0..4) {
+                                    Row(Modifier.weight(1f)) {
+                                        for (col in 0..8) {
+                                            val inFog = isCellInFog(col)
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .fillMaxHeight()
+                                                    .border(0.5.dp, Color(0xFF9E9E9E))
+                                                    .background(
+                                                        if (inFog) Color(0xFF607D8B).copy(alpha = 0.6f)
+                                                        else Color.White
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // 图例说明
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                                    .background(Color(0xFF607D8B).copy(alpha = 0.6f))
+                                    .border(0.5.dp, Color(0xFF9E9E9E))
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "有迷雾",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                            Spacer(Modifier.width(24.dp))
+                            Box(
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                                    .background(Color.White)
+                                    .border(0.5.dp, Color(0xFF9E9E9E))
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "无迷雾",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 }
             }
         }

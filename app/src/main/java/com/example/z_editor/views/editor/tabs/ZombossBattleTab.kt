@@ -253,7 +253,7 @@ fun ZombossBattleTab(
             }
         )
         Text(
-            "右边预留不能种植植物的列数，通常预留两列以上",
+            "表示右边预留不能种植植物的列数，通常预留两列以上",
             fontSize = 12.sp,
             color = Color.Gray,
             modifier = Modifier.padding(start = 12.dp, top = 4.dp)

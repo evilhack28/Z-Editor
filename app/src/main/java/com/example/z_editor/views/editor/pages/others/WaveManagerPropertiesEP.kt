@@ -71,8 +71,6 @@ fun WaveManagerPropertiesEP(
 
     // --- 状态绑定 (需要 String 转换的字段) ---
     var flagInterval by remember(waveManager.flagWaveInterval) { mutableStateOf(waveManager.flagWaveInterval.toString()) }
-    var maxHealth by remember(waveManager.maxNextWaveHealthPercentage) { mutableStateOf(waveManager.maxNextWaveHealthPercentage.toString()) }
-    var minHealth by remember(waveManager.minNextWaveHealthPercentage) { mutableStateOf(waveManager.minNextWaveHealthPercentage.toString()) }
 
     // LevelJam 下拉框状态
     var jamExpanded by remember { mutableStateOf(false) }
@@ -217,56 +215,39 @@ fun WaveManagerPropertiesEP(
                 singleLine = true
             )
 
-            Text(
-                "当场上僵尸总血量低于以下百分比时，自动提前刷新下一波",
-                fontSize = 12.sp,
-                color = Color.Gray
-            )
-
-            val isMaxError =
-                maxHealth.toDoubleOrNull()?.let { it !in 0.0..1.0 } ?: (maxHealth.isNotEmpty())
-            val isMinError =
-                minHealth.toDoubleOrNull()?.let { it !in 0.0..1.0 } ?: (minHealth.isNotEmpty())
-
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = maxHealth,
-                    onValueChange = { str ->
-                        maxHealth = str
-                        val v = str.toDoubleOrNull()
-                        if (v != null && v in 0.0..1.0) {
-                            waveManager = waveManager.copy(maxNextWaveHealthPercentage = v)
+                NumberInputDouble(
+                    value = waveManager.maxNextWaveHealthPercentage,
+                    onValueChange = { input ->
+                        val clamped = input.coerceIn(0.0, 1.0)
+                        if (waveManager.maxNextWaveHealthPercentage != clamped) {
+                            waveManager = waveManager.copy(maxNextWaveHealthPercentage = clamped)
                             sync()
                         }
                     },
-                    label = { Text("最大刷新血线") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = isMaxError,
-                    supportingText = {
-                        if (isMaxError) Text("输入需在0到1之间", color = Color.Red)
-                    }
+                    label = "最大刷新血线",
+                    modifier = Modifier.weight(1f)
                 )
 
-                OutlinedTextField(
-                    value = minHealth,
-                    onValueChange = { str ->
-                        minHealth = str
-                        val v = str.toDoubleOrNull()
-                        if (v != null && v in 0.0..1.0) {
-                            waveManager = waveManager.copy(minNextWaveHealthPercentage = v)
+                NumberInputDouble(
+                    value = waveManager.minNextWaveHealthPercentage,
+                    onValueChange = { input ->
+                        val clamped = input.coerceIn(0.0, 1.0)
+                        if (waveManager.minNextWaveHealthPercentage != clamped) {
+                            waveManager = waveManager.copy(minNextWaveHealthPercentage = clamped)
                             sync()
                         }
                     },
-                    label = { Text("最小刷新血线") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    supportingText = {
-                        if (isMinError) Text("输入需在0到1之间", color = Color.Red)
-                    }
+                    label = "最小刷新血线",
+                    modifier = Modifier.weight(1f)
                 )
             }
 
+            Text(
+                "刷新血线的值需要为0到1之间的数",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
 
             HorizontalDivider()
             Text(
