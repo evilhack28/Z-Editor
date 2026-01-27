@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import team.international2c.pvz2c_level_editor.Translator
+import team.international2c.pvz2c_level_editor.R
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,7 +45,7 @@ fun AboutScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        text = Translator.t(context, "about_title"),
+                        text = context.getString(R.string.about_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
                     )
@@ -54,7 +54,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = Translator.t(context, "back"),
+                            contentDescription = context.getString(R.string.back),
                             tint = Color.White
                         )
                     }
@@ -79,7 +79,7 @@ fun AboutScreen(onBack: () -> Unit) {
             LanguageSelector()
 
             Text(
-                text = Translator.t(context, "app_name"),
+                text = context.getString(R.string.app_name),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSize = 30.sp,
@@ -88,7 +88,7 @@ fun AboutScreen(onBack: () -> Unit) {
             )
 
             Text(
-                text = Translator.t(context, "subtitle"),
+                text = context.getString(R.string.subtitle),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSize = 16.sp,
@@ -97,40 +97,40 @@ fun AboutScreen(onBack: () -> Unit) {
 
             Spacer(Modifier.height(18.dp))
 
-            InfoSectionCard(title = Translator.t(context, "section_intro")) {
+            InfoSectionCard(title = context.getString(R.string.section_intro)) {
                 Text(
-                    text = Translator.t(context, "intro_text"),
+                    text = context.getString(R.string.intro_text),
                     lineHeight = 24.sp,
                     color = Color(0xFF424242)
                 )
             }
 
-            InfoSectionCard(title = Translator.t(context, "section_core_features")) {
-                BulletPoint(Translator.t(context, "bullet_modular_editing"))
-                BulletPoint(Translator.t(context, "bullet_multimode_support"))
-                BulletPoint(Translator.t(context, "bullet_custom_injection"))
-                BulletPoint(Translator.t(context, "bullet_auto_check"))
-                BulletPoint(Translator.t(context, "bullet_preview"))
+            InfoSectionCard(title = context.getString(R.string.section_core_features)) {
+                BulletPoint(context.getString(R.string.bullet_modular_editing))
+                BulletPoint(context.getString(R.string.bullet_multimode_support))
+                BulletPoint(context.getString(R.string.bullet_custom_injection))
+                BulletPoint(context.getString(R.string.bullet_auto_check))
+                BulletPoint(context.getString(R.string.bullet_preview))
             }
 
-            InfoSectionCard(title = Translator.t(context, "section_usage")) {
+            InfoSectionCard(title = context.getString(R.string.section_usage)) {
                 Text(
-                    text = Translator.t(context, "usage_text"),
+                    text = context.getString(R.string.usage_text),
                     lineHeight = 24.sp,
                     color = Color(0xFF424242)
                 )
             }
 
-            InfoSectionCard(title = Translator.t(context, "section_acknowledgements")) {
-                BulletPoint(Translator.t(context, "author"))
+            InfoSectionCard(title = context.getString(R.string.section_acknowledgements)) {
+                BulletPoint(context.getString(R.string.author))
                 Text(
-                    Translator.t(context, "author_name"),
+                    context.getString(R.string.author_name),
                     lineHeight = 24.sp,
                     color = Color(0xFF424242)
                 )
-                BulletPoint(Translator.t(context, "special_thanks"))
+                BulletPoint(context.getString(R.string.special_thanks))
                 Text(
-                    Translator.t(context, "thanks_names"),
+                    context.getString(R.string.thanks_names),
                     lineHeight = 24.sp,
                     color = Color(0xFF424242)
                 )
@@ -139,7 +139,7 @@ fun AboutScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = Translator.t(context, "tagline"),
+                text = context.getString(R.string.tagline),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = Color.Gray,
@@ -149,7 +149,7 @@ fun AboutScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = Translator.t(context, "version"),
+                text = context.getString(R.string.version),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = Color.LightGray,
