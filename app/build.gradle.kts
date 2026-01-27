@@ -12,11 +12,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.pvz2leveleditor"
+        applicationId = "com.example.pvz2leveleditor.evilhack28"
         minSdk = 24
         targetSdk = 36
         versionCode = 14
-        versionName = "1.1.2"
+        versionName = "1.1.3-evilhack28"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
