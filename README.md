@@ -1,3 +1,6 @@
+English Translation Made by EvilHack28
+
+
 Z-Editor 是一款专为《植物大战僵尸2:中文版》关卡制作设计的 Android 可视化编辑器。
 本项目旨在解决传统 JSON 编辑中容易出现的语法错误、引用丢失以及繁琐的波次计算问题。通过现代化的移动端 UI，降低 JSON 关卡编辑门槛。
 
