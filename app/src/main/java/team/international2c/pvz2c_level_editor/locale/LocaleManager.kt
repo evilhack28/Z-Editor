@@ -1,16 +1,16 @@
 package team.international2c.pvz2c_level_editor.locale
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import team.international2c.pvz2c_level_editor.MainActivity
+import team.international2c.pvz2c_level_editor.dataStore
 import java.util.Locale
-
-val Context.dataStore by preferencesDataStore(name = "settings")
 
 class LocaleManager(private val context: Context) {
     companion object {
@@ -37,6 +37,13 @@ class LocaleManager(private val context: Context) {
         val configuration = Configuration(resources.configuration)
         configuration.setLocale(locale)
         resources.updateConfiguration(configuration, resources.displayMetrics)
+        val newContext = context.createConfigurationContext(configuration)
+        val intent = Intent(newContext, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        newContext.startActivity(intent)
+        if (newContext is Activity) {
+            newContext.finish()
+        }
     }
 
     // Get supported locales
@@ -44,6 +51,5 @@ class LocaleManager(private val context: Context) {
         Locale.forLanguageTag("en"),
         Locale.forLanguageTag("zh"),
         Locale.forLanguageTag("ru")
-
     )
 }

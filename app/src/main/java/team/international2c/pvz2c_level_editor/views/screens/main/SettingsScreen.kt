@@ -140,7 +140,7 @@ fun LanguageSelector(localeViewModel: LocaleViewModel) {
                         onClick = {
                             selectedLanguage = locale.language
                             localeViewModel.changeLocale(locale)
-                            updateLocale(context, locale)
+//                            updateLocale(context, locale)
                             expanded = false
                         }
                     )
