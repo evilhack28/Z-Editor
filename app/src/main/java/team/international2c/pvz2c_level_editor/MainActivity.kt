@@ -1,5 +1,6 @@
 package team.international2c.pvz2c_level_editor
 
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -24,8 +28,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
-import org.koin.androidx.viewmodel.ext.android.viewModel
-import team.international2c.pvz2c_level_editor.locale.LocaleManager
+import org.koin.core.context.GlobalContext
 import team.international2c.pvz2c_level_editor.viewmodels.LocaleViewModel
 import team.international2c.pvz2c_level_editor.ui.theme.PVZ2LevelEditorTheme
 import team.international2c.pvz2c_level_editor.viewmodels.ThemeViewModel
@@ -34,15 +37,20 @@ import team.international2c.pvz2c_level_editor.views.screens.main.EditorScreen
 import team.international2c.pvz2c_level_editor.views.screens.main.LevelListScreen
 import team.international2c.pvz2c_level_editor.views.screens.main.SettingsScreen
 
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+
+
 class MainActivity : ComponentActivity() {
-    private val localeManager: LocaleManager by inject()
     private val themeViewModel: ThemeViewModel by viewModels()
     private val localeViewModel: LocaleViewModel by inject()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startKoin {
-            androidContext(this@MainActivity)
-            modules(koinModule)
+        if (GlobalContext.getOrNull() == null) {
+            startKoin {
+                androidContext(this@MainActivity)
+                modules(koinModule)
+            }
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
